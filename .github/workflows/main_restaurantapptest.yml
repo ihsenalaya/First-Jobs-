@@ -58,5 +58,5 @@ jobs:
         with:
           app-name: 'RESTAURANTAPPTEST'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EF6E397735084CE298D51B04130F894D }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D566C30A1C0545B78E19C0E84107790D }}
           package: .

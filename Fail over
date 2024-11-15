@@ -1,0 +1,166 @@
+1. Objectif du document
+
+Ce document décrit les procédures de reprise d’activité pour les serveurs ADFS en cas d’incident majeur ou de panne du site principal. Il détaille les étapes nécessaires pour basculer les services vers un site de secours, assurer la continuité des authentifications pour les applications dépendantes, puis restaurer le service principal.
+
+2. Périmètre et contexte
+
+Service concerné : ADFS (Active Directory Federation Services) pour l’authentification Single Sign-On (SSO).
+
+Applications dépendantes : SharePoint, Office 365, autres applications d’entreprise nécessitant ADFS.
+
+Environnement PRA : Basé sur Azure avec les composants suivants :
+
+Azure Site Recovery (ASR) pour la réplication et le basculement.
+
+Azure Traffic Manager pour le routage des demandes.
+
+Load Balancers (Public et F5 Internal) pour équilibrer les charges et rediriger le trafic.
+
+
+OS et version : Windows Server (version du système d’exploitation et des serveurs ADFS).
+
+
+3. Schéma d’architecture
+
+Inclure un schéma de l’architecture montrant :
+
+Les serveurs ADFS dans le site principal et le site de secours.
+
+La configuration des Load Balancers (internes et externes).
+
+Le Traffic Manager configuré pour gérer les basculements.
+
+
+4. Procédures de préparation
+
+4.1 Configuration d’Azure Site Recovery
+
+Étapes :
+
+1. Configurer Azure Site Recovery pour répliquer les serveurs ADFS vers le site de secours.
+
+
+2. Définir la fréquence de réplication en fonction des exigences de récupération (RPO).
+
+
+3. Vérifier la synchronisation des données régulièrement.
+
+
+
+
+4.2 Traffic Manager et Load Balancers
+
+Traffic Manager :
+
+Configurer le Traffic Manager pour basculer les requêtes d’authentification vers le site secondaire en cas de défaillance.
+
+
+Load Balancers :
+
+Configurer les Load Balancers publics et internes pour gérer la redirection du trafic ADFS.
+
+
+
+5. Procédure de basculement (Failover)
+
+En cas de sinistre sur le site principal :
+
+5.1 Déclenchement du basculement avec Azure Site Recovery
+
+Étapes :
+
+1. Accéder au portail Azure et initier le basculement d’Azure Site Recovery vers le site de secours.
+
+
+2. Valider l'état des serveurs ADFS sur le site de secours.
+
+
+
+
+5.2 Activation du Traffic Manager et des Load Balancers
+
+Assurez-vous que le Traffic Manager redirige les requêtes vers les Load Balancers du site de secours.
+
+Configuration F5 Internal Load Balancer :
+
+Vérifiez que les sessions utilisateurs sont redirigées sans perturbations majeures.
+
+
+
+5.3 Vérification de la connectivité des applications
+
+Testez l’accès des applications comme SharePoint et Office 365 pour confirmer que les utilisateurs peuvent s’authentifier.
+
+Outils de surveillance : Utilisez les outils de monitoring pour détecter toute anomalie d’accès.
+
+
+6. Test de basculement
+
+6.1 Test de PRA
+
+Planifiez des tests réguliers du PRA pour vérifier que la configuration fonctionne correctement et que le personnel est familiarisé avec les étapes de basculement.
+
+
+6.2 Procédures de validation
+
+Validez l’authentification des principales applications.
+
+Documentez les éventuels problèmes rencontrés lors du test et apportez les corrections nécessaires.
+
+
+7. Procédure de retour (Failback)
+
+Une fois le site principal rétabli :
+
+7.1 Préparation au retour
+
+Assurez-vous que les serveurs ADFS du site principal sont en état de fonctionner et synchronisés avec le site secondaire.
+
+
+7.2 Initiation du retour via Azure Site Recovery
+
+Étapes :
+
+1. Lancez le retour sur Azure Site Recovery pour basculer les services ADFS vers le site principal.
+
+
+2. Désactivez les configurations de basculement du Traffic Manager pour rediriger les utilisateurs vers le site principal.
+
+
+
+
+7.3 Vérification post-basculement
+
+Testez les applications et les services pour s’assurer qu’ils fonctionnent correctement sur le site principal.
+
+Surveillez les performances pour identifier d'éventuelles anomalies.
+
+
+8. Surveillance continue et alertes
+
+Configurez des alertes sur Azure pour être notifié des problèmes potentiels avec les serveurs ADFS.
+
+Mettez en place un suivi de la disponibilité et de la performance des serveurs pour garantir leur bon fonctionnement.
+
+
+9. Documentation des incidents et analyse post-sinistre
+
+9.1 Rapport de basculement
+
+Documentez l’incident, les actions entreprises et les performances du plan PRA.
+
+Évaluez le succès du basculement et identifiez les améliorations possibles.
+
+
+9.2 Revue post-sinistre
+
+Réunissez les parties prenantes pour analyser les résultats et mettre à jour les procédures PRA.
+
+
+10. Annexes
+
+Liste des contacts : Équipe IT, fournisseurs, gestionnaires de services cloud.
+
+Documentation technique : Références pour la configuration d’Azure Site Recovery, Traffic Manager et Load Balancers.
+
+Journal des tests PRA : Historique des tests avec date, résultat, et améliorations apportées.

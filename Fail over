@@ -164,3 +164,25 @@ Liste des contacts : Équipe IT, fournisseurs, gestionnaires de services cloud.
 Documentation technique : Références pour la configuration d’Azure Site Recovery, Traffic Manager et Load Balancers.
 
 Journal des tests PRA : Historique des tests avec date, résultat, et améliorations apportées.
+
+ChatGPT
+
+Vous avez dit :
+Bonjour,
+Concernant le message d'erruer qui s'affiche dans l'acceuil des vls qui execute le nas " virtuel machine agent qtatus not ready." J'ai fait mes recherches et la seul explication logique que j'ai eu de la part de kb de netapp c'est que l'image ne support pas les extensions azure monitor, dans notre cas l'extension network wotcher est installé automatiquement dans ces deux vms. Je propose de d'essayer de désactiver les extensions networkwoatcher des vm nas, et de créer une policy qui empêche l'installation des ces extention dans les machines designer pour garantir n'est pas avoir des solution.
+ChatGPT a dit :
+ChatGPT
+Voici une version révisée de votre message pour plus de clarté et de précision :
+
+Bonjour,
+
+Concernant le message d’erreur affiché sur les VMs NAS à l’accueil : "Virtual Machine Agent Status Not Ready", j’ai mené des recherches approfondies. D’après les articles de la base de connaissances NetApp, il semble que l’image utilisée ne supporte pas les extensions Azure Monitor.
+
+Dans notre cas, l’extension Network Watcher est installée automatiquement sur ces deux VMs. Je propose donc :
+
+De désactiver manuellement l’extension Network Watcher sur les VMs NAS.
+De créer une policy Azure empêchant l’installation automatique de cette extension sur les machines virtuelles NAS pour garantir une stabilité à long terme.
+Merci de me faire savoir si vous validez cette approche ou si vous souhaitez explorer d’autres solutions.
+
+Cordialement,
+Ihsen

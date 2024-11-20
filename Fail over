@@ -186,3 +186,29 @@ Merci de me faire savoir si vous validez cette approche ou si vous souhaitez exp
 
 Cordialement,
 Ihsen
+
+
+Service concerné :
+ADFS (Active Directory Federation Services) exécuté sur deux machines virtuelles (vmw0infiam050 avec une adresse IP privée 10.238.4.105 et vmw0infiam040 avec une adresse IP privée 10.238.4.104) regroupées dans un Availability Set réparti entre la Zone 1 et la Zone 3.
+
+Applications dépendantes :
+
+Environnement PRA :
+Le Plan de Reprise d'Activité (PRA) est basé sur Azure et repose sur les composants suivants :
+
+Azure Site Recovery (ASR) :
+
+Permet la réplication et le basculement des machines virtuelles.
+En cas de sinistre, le basculement sera effectué à partir des deux serveurs ADFS en Availability Set du site primaire (AMSTERDAM) vers un serveur ADFS de secours déjà répliqué avec ASR dans la zone de récupération (DUBLIN).
+Le serveur de secours, nommé vmw0infiam100, utilise une adresse IP privée 10.238.192.68.
+La réplication des disques est également gérée par ASR.
+Le réseau cible dans la zone de récupération est nommé vnt0infiam100.
+Azure Traffic Manager :
+
+Utilisé pour distribuer le trafic selon une stratégie de routage basée sur la priorité.
+Le profil Traffic Manager contient deux points de terminaison :
+adfs-proxy-korian avec une priorité 200 (point de terminaison principal).
+adfs-proxy-korian-dublin avec une priorité 300 (point de terminaison secondaire).
+Par défaut, Traffic Manager dirige tout le trafic vers le point de terminaison principal (adfs-proxy-korian).
+Si le point de terminaison principal devient indisponible, il est automatiquement désactivé ou sa priorité est modifiée pour que Traffic Manager redirige le trafic vers le point de terminaison secondaire (adfs-proxy-korian-dublin).
+La disponibilité des points de terminaison est déterminée en fonction de leur état configuré (activé ou désactivé).

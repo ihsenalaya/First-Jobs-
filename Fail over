@@ -321,4 +321,59 @@ Ce document doit être testé et révisé régulièrement (par exemple, une fois
 
 
 ChatGPT peut faire des erreurs. Envisagez de vérifier les in
+Plan de Reprise d'Activité (PRA) - Serveur PKI
+1. Introduction
+Objectif du document : Décrire les étapes et les mécanismes pour garantir la continuité de service du serveur PKI en cas de sinistre.
+Périmètre : Ce PRA couvre le serveur PKI déployé sur une machine virtuelle Azure.
+Technologies utilisées :
+Azure Site Recovery (ASR)
+Azure Traffic Manager
+Azure Load Balancer (Public et/ou Internal)
+2. Architecture de la solution
+Description de l’infrastructure actuelle :
+Serveur PKI :
+Nom de la VM : <nom_VM>
+Région primaire : <région_primaire>
+Système d'exploitation : <OS utilisé>
+Composants associés :
+Certificats stockés : <emplacements>
+Base de données de certificats : <description>
+Solution de reprise :
+Région secondaire : <région_secondaire>
+Réplication gérée par : Azure Site Recovery
+Gestion du trafic : Azure Traffic Manager
+3. Stratégie de sauvegarde et de réplication
+Azure Site Recovery :
+Configuration :
+Activation de la réplication pour la VM PKI depuis la région primaire vers la région secondaire.
+Fréquence des instantanés : <fréquence>
+Stockage de réplication :
+Type de stockage : <Standard/Premium>
+Chiffrement des données activé : <Oui/Non>
+Sauvegardes périodiques :
+Type : Sauvegarde Azure VM ou sauvegarde manuelle de fichiers de configuration critiques (certificats racine, bases de données, etc.).
+Emplacement de sauvegarde : Azure Recovery Vault.
+4. Scénarios de sinistre
+4.1. Défaillance régionale
+Étapes :
 
+Détection de l’indisponibilité de la région primaire.
+Déclenchement du basculement avec Azure Site Recovery :
+Accéder à l'interface Azure Portal.
+Sélectionner la VM PKI.
+Exécuter l’option de "Failover".
+Mise à jour des points de terminaison DNS avec Azure Traffic Manager.
+Validation de la disponibilité du serveur dans la région secondaire.
+4.2. Défaillance de la VM PKI uniquement
+Étapes :
+
+Vérification des sauvegardes.
+Restauration de la VM PKI depuis Azure Backup si Azure Site Recovery ne peut pas couvrir le problème.
+5. Tests de basculement
+Objectif : Valider le fonctionnement du PRA sans impacter la production.
+Fréquence des tests : Semi-annuelle.
+Étapes :
+Planifier une fenêtre de maintenance.
+Lancer un "Test Failover" dans ASR.
+Valider les fonctionnalités de la VM dans l’environnement de test.
+Effectuer un nettoyage après le test.

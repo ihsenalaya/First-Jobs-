@@ -219,3 +219,13 @@ J'ai fixé un créneau avec Anthony pour analyser les machines virtuelles suscep
 Si vous êtes d’accord, je pourrais ensuite réaliser une étude financière et technique afin de proposer des solutions : soit le redimensionnement des machines surdimensionnées, soit la création de machines virtuelles dans un scale set. Cela permettrait de garantir les performances souhaitées grâce à la scalabilité horizontale, tout en réalisant des économies financières sur le long terme.
 
 Cordialement,
+
+Bonjour,
+
+Advisot m'a fourni une liste des VMs identifiées comme surdimensionnées. Cela constitue un bon point de départ. J'ai commencé par formater cette liste et ne conserver que les VMs ayant une utilisation du CPU inférieure à 20 % et une utilisation de la mémoire inférieure à 33 %.
+
+Ensuite, j'ai proposé des redimensionnements dans la même catégorie de machines virtuelles, afin d'éviter toute surprise.
+
+En tout cas, il est très intéressant de suivre ce chantier d’optimisation, car cela permet d'améliorer les performances tout en réduisant les coûts. Cependant, cette démarche nécessite des études approfondies et une planification rigoureuse.
+
+C’est un projet qui, bien mené, peut s’avérer très rentable.

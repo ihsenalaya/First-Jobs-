@@ -211,4 +211,11 @@ adfs-proxy-korian avec une priorité 200 (point de terminaison principal).
 adfs-proxy-korian-dublin avec une priorité 300 (point de terminaison secondaire).
 Par défaut, Traffic Manager dirige tout le trafic vers le point de terminaison principal (adfs-proxy-korian).
 Si le point de terminaison principal devient indisponible, il est automatiquement désactivé ou sa priorité est modifiée pour que Traffic Manager redirige le trafic vers le point de terminaison secondaire (adfs-proxy-korian-dublin).
-La disponibilité des points de terminaison est déterminée en fonction de leur état configuré (activé ou désactivé).
+La disponibilité des points de terminaison est déterminée en fonction de leur état configuré (activé ou désactivé)
+Bonjour,
+
+J'ai fixé un créneau avec Anthony pour analyser les machines virtuelles susceptibles d’être redimensionnées. Nous baserons cette analyse sur les données d’Azure Monitor sur une période maximale d’un mois.
+
+Si vous êtes d’accord, je pourrais ensuite réaliser une étude financière et technique afin de proposer des solutions : soit le redimensionnement des machines surdimensionnées, soit la création de machines virtuelles dans un scale set. Cela permettrait de garantir les performances souhaitées grâce à la scalabilité horizontale, tout en réalisant des économies financières sur le long terme.
+
+Cordialement,

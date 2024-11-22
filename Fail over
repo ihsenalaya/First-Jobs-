@@ -1,16 +1,24 @@
-Voici une version corrigée de votre e-mail :
+Voici une version corrigée et reformulée de votre message :
+
 
 ---
 
-Bonjour,
+Objet : Problème d'accès aux comptes de stockage
 
-Vous trouverez ci-joint ma proposition de documentation des procédures PRA des serveurs ADFS et PKI. J'ai réalisé cette documentation grâce au soutien d'Anthony, aux documents partagés dans le groupe et à mes propres recherches sur Azure.
+Bonjour Guillaume,
 
-Ayant rejoint le projet en cours de route, je risque d'oublier une partie ou de mal comprendre certaines architectures. Je serais ravi d'avoir vos suggestions et critiques pour améliorer cette documentation.
+Suite à un ticket confié par Benoît, concernant une remontée de Thomas Fourest, il semble qu’il puisse accéder à un compte de stockage depuis l’extérieur, mais qu’il ne parvienne pas à y accéder via Clariane Balayage.
 
-Bien cordialement,  
-[Votre Nom]
+Après analyse, j’ai constaté que les comptes de stockage sont configurés de manière hétérogène :
 
----
+Certains sont accessibles depuis n’importe quel réseau Internet.
 
-J'espère que cela répond à vos attentes. Si vous avez besoin de modifications supplémentaires ou d'aide pour autre chose, n'hésitez pas à me le faire savoir.
+D’autres sont configurés pour être accessibles uniquement via le VPN, mais pas depuis le réseau de la DSI.
+
+Enfin, certains ne sont pas accessibles ni via le VPN ni via une adresse IP de la DSI.
+
+
+Cela pourrait expliquer les problèmes d’accès rencontrés. Merci de me faire savoir si des actions spécifiques doivent être entreprises pour harmoniser ces configurations ou si vous souhaitez que je propose des ajustements.
+
+Cordialement,
+Ihsen Alaya

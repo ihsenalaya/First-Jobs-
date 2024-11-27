@@ -183,3 +183,42 @@ Résumé des bénéfices
 
 
 Avec ces ajustements, vous devriez observer une amélioration notable des performances dans APIM.
+
+
+Voici une version corrigée de votre texte :
+
+
+---
+
+Bonjour,
+
+Suite à vos recommandations concernant le suivi des comptes de stockage, j'ai effectué un balayage détaillé de chaque compte pour extraire des statistiques sur :
+
+1. Le mode d'accès configuré (Internet, IP publique, endpoint sécurisé)
+
+
+2. Trois fonctionnalités liées à la sécurité des données (accès anonyme, locks, et soft delete).
+
+
+
+Voici les résultats :
+
+80 % des comptes de stockage sont accessibles depuis n'importe quel réseau.
+
+17 % sont accessibles uniquement depuis des IP publiques.
+
+11 % disposent d'un accès sécurisé via des endpoints privés.
+
+38 % ont activé la fonctionnalité soft delete (7 ou 30 jours).
+
+1 % sont équipés de locks pour empêcher la suppression accidentelle.
+
+11 % sont configurés pour être accessibles par n'importe quel utilisateur sur le tenant.
+
+
+Ces statistiques montrent qu'il reste des points d'amélioration significatifs pour renforcer la sécurité et la résilience des comptes de stockage.
+
+
+---
+
+Si vous avez besoin d'autres modifications, n'hésitez pas !

@@ -1,22 +1,14 @@
-Bonjour Kevin et Jean-Baptiste,
+Objet : Proposition de révision des dimensions des machines virtuelles
 
-J'espère que vous allez bien.
+Bonjour,
 
-Suite à mon analyse de l'ensemble des comptes de stockage, voici les principales observations que j'ai relevées :
+Suite aux recommandations de Guillaume et Benoît concernant la révision des dimensions des machines virtuelles dans le but d’optimiser les performances et les coûts, je t’adresse ci-joint un fichier Excel comportant :
 
-80% des comptes sont accessibles depuis n'importe quel réseau.
+Une feuille "proposition" contenant des détails sur l’utilisation des ressources des VMs administrées par toi.
 
-17% des comptes sont accessibles uniquement depuis des adresses IP publiques choisies.
-
-12% des comptes permettent un accès pour tout utilisateur du tenant via l'accès anonyme.
-
-10% des comptes disposent d'un accès sécurisé via des endpoints sécurisés.
-
-Une homogénéité partielle dans la mise en œuvre des fonctionnalités de protection des données, telles que Soft Delete, Versioning, et les Locks.
-
-Une absence de granularité dans l'attribution des rôles : l'accès aux données dans les conteneurs est permis via une permission liée au rôle Outsourcer Contributor, assigné à une soixantaine d'utilisateurs. Cela leur permet de consulter tous les blobs sans restriction.
+Une feuille "vm size" présentant les spécifications techniques des VMs existantes ainsi que celles des VMs proposées pour un redimensionnement.
 
 
-Benoît a suggéré d’organiser des ateliers pour définir une stratégie unifiée concernant la sécurité des données dans les conteneurs.
+Merci d’effectuer les analyses nécessaires et de fournir tes retours dans la colonne "remarques", en précisant la faisabilité du redimensionnement. Si ce dernier n’est pas envisageable, merci de proposer la réservation des machines virtuelles pour une durée d’un an ou de trois ans, en fonction des tarifs indiqués dans la feuille "vm size".
 
-Merci pour votre retour.
+Cordialement,

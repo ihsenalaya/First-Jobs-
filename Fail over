@@ -1,11 +1,22 @@
-Bonjour Nicolas,
+Bonjour Kevin et Jean-Baptiste,
 
-J'espère que tu vas bien.
+J'espère que vous allez bien.
 
-Tu trouveras ci-joint ma proposition pour le PRA ADFS et PKI, que j'ai préparée à partir des clarifications d'Anthony, de la documentation partagée et de ma propre analyse dans Azure. J'ai quelques questions concernant les stratégies déjà établies pour le PRA ADFS et PKI.
+Suite à mon analyse de l'ensemble des comptes de stockage, voici les principales observations que j'ai relevées :
 
-Serait-il possible de faire un point lundi à ce sujet, ainsi que sur Terraform et GitLab ?
+80% des comptes sont accessibles depuis n'importe quel réseau.
 
-Je te remercie beaucoup pour ton aide.
+17% des comptes sont accessibles uniquement depuis des adresses IP publiques choisies.
 
-Bien à toi,
+12% des comptes permettent un accès pour tout utilisateur du tenant via l'accès anonyme.
+
+10% des comptes disposent d'un accès sécurisé via des endpoints sécurisés.
+
+Une homogénéité partielle dans la mise en œuvre des fonctionnalités de protection des données, telles que Soft Delete, Versioning, et les Locks.
+
+Une absence de granularité dans l'attribution des rôles : l'accès aux données dans les conteneurs est permis via une permission liée au rôle Outsourcer Contributor, assigné à une soixantaine d'utilisateurs. Cela leur permet de consulter tous les blobs sans restriction.
+
+
+Benoît a suggéré d’organiser des ateliers pour définir une stratégie unifiée concernant la sécurité des données dans les conteneurs.
+
+Merci pour votre retour.

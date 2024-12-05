@@ -12,3 +12,36 @@ Une feuille "vm size" présentant les spécifications techniques des VMs existan
 Merci d’effectuer les analyses nécessaires et de fournir tes retours dans la colonne "remarques", en précisant la faisabilité du redimensionnement. Si ce dernier n’est pas envisageable, merci de proposer la réservation des machines virtuelles pour une durée d’un an ou de trois ans, en fonction des tarifs indiqués dans la feuille "vm size".
 
 Cordialement,
+
+# Variables
+$ListeNomsPath = "C:\Chemin\Vers\Noms.xlsx"  # Remplacez par le chemin de votre fichier contenant les noms
+$TemplatePath = "C:\Chemin\Vers\Template.xlsx"  # Remplacez par le chemin du template
+$OutputFolder = "C:\Chemin\Vers\Sortie"  # Remplacez par le dossier de sortie
+
+# Chargement du module Excel si nécessaire
+if (-not (Get-Module -Name ImportExcel -ListAvailable)) {
+    Install-Module -Name ImportExcel -Force -Scope CurrentUser
+}
+
+# Importation du module
+Import-Module ImportExcel
+
+# Chargement des noms
+$Noms = Import-Excel -Path $ListeNomsPath | Select-Object -ExpandProperty Noms
+
+# Vérifie si le dossier de sortie existe
+if (-not (Test-Path -Path $OutputFolder)) {
+    New-Item -ItemType Directory -Path $OutputFolder | Out-Null
+}
+
+# Boucle pour créer un fichier par nom
+foreach ($Nom in $Noms) {
+    $NewFilePath = Join-Path -Path $OutputFolder -ChildPath "$Nom.xlsx"
+    Copy-Item -Path $TemplatePath -Destination $NewFilePath
+    Write-Output "Fichier créé : $NewFilePath"
+}
+
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+.\GénérationExcel.ps1

@@ -45,3 +45,26 @@ foreach ($Nom in $Noms) {
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 .\GénérationExcel.ps1
+
+
+
+# Définir les chemins
+$sourceFolder = "C:\chemin\vers\repertoire\source"
+$destinationFolder = "C:\chemin\vers\repertoire\destination"
+$fileListCsv = "C:\chemin\vers\fichiers_a_copier.csv"
+
+# Charger la liste des noms de fichiers depuis le CSV
+$fileNames = Import-Csv -Path $fileListCsv | Select-Object -ExpandProperty Nom  # Remplacez "Nom" par le nom de la colonne du CSV
+
+# Vérifier et copier les fichiers
+foreach ($fileName in $fileNames) {
+    $sourceFile = Join-Path -Path $sourceFolder -ChildPath $fileName
+    $destinationFile = Join-Path -Path $destinationFolder -ChildPath $fileName
+
+    if (Test-Path $sourceFile) {
+        Copy-Item -Path $sourceFile -Destination $destinationFile
+        Write-Host "Copié : $fileName"
+    } else {
+        Write-Host "Fichier introuvable : $fileName"
+    }
+}

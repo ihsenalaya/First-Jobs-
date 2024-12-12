@@ -157,6 +157,37 @@ Surveillance pour éviter le surprovisionnement.
 
 ---
 
+Bonjour,
+
+J'espère que tu vas bien.
+Benoît m'a chargé de concevoir, mettre en place, et documenter l'architecture de la Managed Instance.
+Pour débuter, il est nécessaire de trancher entre l'utilisation de Terraform ou d'une autre méthode d'automatisation. Afin de faciliter cette analyse, merci de me fournir les informations suivantes :
+
+Ressources et capacités :
+
+Informations sur les ressources nécessaires (VvCPU, RAM, stockage, etc.)
+
+Capacités spécifiques requises pour la Managed Instance (taille des bases de données, performances attendues, etc.)
+
+
+Méthodes d'authentification :
+
+Quelle stratégie d'authentification sera utilisée (Azure AD, authentification SQL, etc.) ?
+
+Exigences spécifiques pour la gestion des utilisateurs et des permissions.
+
+
+Stratégies de reprise d'activité et haute disponibilité :
+
+Exigences de résilience et haute disponibilité (réplication géographique, mise en cluster, etc.)
+
+Stratégies de sauvegarde, de restauration et de reprise après sinistre (DR) nécessaires.
+
+
+Autres données utiles :
+
+Exigences de gestion et de monitoring (alertes, logs, automatisation des mises à jour, etc.)
+
 10. Documentation et Maintenance
 
 Processus de mise à jour et de gestion.

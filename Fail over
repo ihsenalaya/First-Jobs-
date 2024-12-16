@@ -67,4 +67,8 @@ foreach ($file in $filesToCopy) {
 
 Write-Host "Copie terminée."
 
+Bonjour,
+
+Vendredi, j'ai créé des App Registrations ainsi que des certificats associés dans le cadre d'un ticket. Cependant, j'ai perdu les mots de passe des certificats créés. J'ai donc généré d'autres certificats et tenté de supprimer les certificats dont j'avais perdu les mots de passe avant de les utiliser.
+
 

@@ -1,0 +1,205 @@
+# Déploiement de Pentaho dans Azure avec VMSS, Azure Load Balancer et Application Gateway
+
+Ce document décrit les étapes détaillées pour déployer une architecture Pentaho dans Azure, utilisant **Virtual Machine Scale Sets (VMSS)**, **Azure Load Balancer**, et **Azure Application Gateway**. L'objectif est d'assurer une haute disponibilité, une performance optimale, et une sécurité renforcée.
+
+---
+
+## **1. Prérequis**
+
+1. **Compte Azure** : Un abonnement actif.
+2. **Pentaho** : Les fichiers d'installation ou une image déjà préconfigurée.
+3. **Certificat SSL** : Nécessaire pour Application Gateway (peut être auto-signé pour des tests).
+4. **Base de données** : Azure Database pour PostgreSQL ou MySQL.
+5. **Script d'installation** : Automatisation de l'installation et configuration de Pentaho sur chaque VM.
+
+---
+
+## **2. Architecture globale**
+
+```
+Internet
+   |
+   ▼
+[Azure Application Gateway]  (Layer 7: SSL/TLS Termination, WAF, URL Routing)
+   |
+   ▼
+[Azure Load Balancer]         (Layer 4: Traffic Distribution to VMSS)
+   |
+   ▼
+[Virtual Machine Scale Set]   (Backend Instances Hosting Pentaho)
+   |
+   ▼
+[Azure Database]              (PostgreSQL/MySQL for Metadata/Logs)
+```
+
+---
+
+## **3. Étapes de mise en place**
+
+### **Étape 1 : Créer un Virtual Network (VNet)**
+
+1. **Créez un VNet** :
+
+   - **Nom** : `Pentaho-VNet`
+   - **Adresse CIDR** : `10.0.0.0/16`
+
+2. **Ajoutez des sous-réseaux** :
+
+   - `Frontend-Subnet` : `10.0.1.0/24` (pour Application Gateway)
+   - `Backend-Subnet` : `10.0.2.0/24` (pour VMSS et Load Balancer)
+   - `Database-Subnet` : `10.0.3.0/24` (pour Azure Database)
+
+---
+
+### **Étape 2 : Créer Azure Database pour PostgreSQL/MySQL**
+
+1. **Déployez une base de données Azure** :
+
+   - **Type** : PostgreSQL flexible server (ou MySQL selon votre besoin).
+   - **Nom** : `pentaho-db`
+   - **Réseau** : Utilisez un **Azure Private Link** pour connecter la base de données au VNet.
+   - **Configuration** :
+     - Taille : Standard, avec 2 vCores et 50 Go de stockage pour commencer.
+     - Créez un utilisateur et une base nommée `pentaho`.
+
+2. **Notez les paramètres** :
+
+   - Hôte : `pentaho-db.database.windows.net`
+   - Port : `5432` (PostgreSQL) ou `3306` (MySQL).
+   - Identifiants : Nom d'utilisateur et mot de passe créés.
+
+---
+
+### **Étape 3 : Configurer Azure Load Balancer**
+
+1. **Créez un Load Balancer public** :
+
+   - **Nom** : `Pentaho-LB`
+   - **Type** : Standard.
+   - **Frontend IP** : `Static` (adresse IP publique attribuée).
+
+2. **Ajoutez un Backend Pool** :
+
+   - Associez le Backend Pool au VMSS que vous créerez ultérieurement.
+
+3. **Configurez les probes d'intégrité** :
+
+   - **Nom** : `HealthProbe-HTTP`
+   - **Protocole** : HTTP.
+   - **Port** : `8080` (port par défaut pour Pentaho).
+   - **Chemin** : `/pentaho/Login` (ou une URL spécifique).
+
+4. **Créez des règles Load Balancer** :
+
+   - **Nom** : `LB-Rule-HTTP`
+   - **Protocole** : TCP.
+   - **Port frontend/backend** : `8080`.
+
+---
+
+### **Étape 4 : Créer un Virtual Machine Scale Set (VMSS)**
+
+1. **Créez le VMSS** :
+
+   - **Nom** : `Pentaho-VMSS`
+   - **Image** :
+     - Utilisez une image Ubuntu LTS ou RHEL.
+     - Si possible, créez une image personnalisée avec Pentaho préinstallé.
+   - **Taille** : Standard D2s v3 (2 vCPU, 8 Go RAM).
+
+2. **Configuration** :
+
+   - **Autoscaling** :
+     - Minimum : 2 instances.
+     - Maximum : 10 instances.
+     - Condition : Basé sur la charge CPU (ex. : augmenter si CPU > 70% pendant 5 minutes).
+   - **Networking** : Associez le VMSS au Backend-Subnet.
+
+3. **Installer Pentaho sur les instances** :
+
+   - Utilisez une **Custom Script Extension** ou **Cloud-Init** pour exécuter un script d'installation lors de la création des instances.
+   - Exemple de script :
+     ```bash
+     #!/bin/bash
+     sudo apt update
+     sudo apt install openjdk-11-jdk -y
+     wget https://sourceforge.net/projects/pentaho/files/latest/download -O pentaho.zip
+     unzip pentaho.zip -d /opt/pentaho
+     /opt/pentaho/start-pentaho.sh
+     ```
+
+---
+
+### **Étape 5 : Configurer Azure Application Gateway**
+
+1. **Créez un Application Gateway** :
+
+   - **Nom** : `Pentaho-AGW`.
+   - **Type** : WAF v2 (inclut le Web Application Firewall).
+   - **Frontend IP** : Public (adresse IP statique).
+   - **Backend Pool** : Associez-le au Load Balancer.
+
+2. **Configuration SSL/TLS** :
+
+   - Importez votre certificat SSL (au format PFX).
+   - Configurez une règle de listener HTTPS.
+
+3. **Règles de routage basées sur l'URL** :
+
+   - `/reports` → Pentaho BA Server.
+   - `/etl` → Pentaho Data Integration (PDI).
+
+4. **Configurer le WAF** :
+
+   - Activez les règles prédéfinies pour protéger contre les attaques courantes (SQLi, XSS, etc.).
+
+---
+
+### **Étape 6 : Configurer la sécurité**
+
+1. **Network Security Groups (NSG)** :
+
+   - Associez des NSG aux sous-réseaux pour contrôler le trafic.
+   - Exemple de règles :
+     - Autorisez HTTP/HTTPS depuis Internet vers Application Gateway.
+     - Autorisez le trafic interne entre Application Gateway, Load Balancer, et VMSS.
+     - Autorisez le trafic interne entre VMSS et la base de données.
+     - Bloquez tout autre trafic.
+
+2. **Pare-feu de la base de données** :
+
+   - Limitez l'accès à la base uniquement au Backend-Subnet.
+
+---
+
+### **7. Validation et tests**
+
+1. **Tester l'accès** :
+
+   - Accédez à l'interface Web de Pentaho via l'IP ou le DNS d'Application Gateway.
+
+2. **Vérifier le routage** :
+
+   - Assurez-vous que `/reports` et `/etl` pointent vers les bonnes instances backend.
+
+3. **Vérifier le scaling** :
+
+   - Générez une charge artificielle pour vérifier l'autoscaling du VMSS.
+
+4. **Inspecter les logs** :
+
+   - Consultez les logs dans Pentaho et Azure Monitor pour détecter des problèmes potentiels.
+
+---
+
+### **8. Améliorations potentielles**
+
+- **Azure Monitor** : Configurez des alertes pour surveiller les performances des VMSS, Load Balancer, et Application Gateway.
+- **Azure Log Analytics** : Collectez et analysez les logs de Pentaho et des composants Azure.
+- **Backup** : Configurez des sauvegardes régulières pour la base de données et les données critiques de Pentaho.
+- **CDN** : Utilisez un Content Delivery Network si vous prévoyez de servir des rapports volumineux à des utilisateurs répartis géographiquement.
+
+---
+
+Cette architecture garantit une solution performante, évolutive et sécurisée pour exécuter Pentaho dans Azure. En cas de questions ou d'améliorations, n'hésitez pas à demander !
+

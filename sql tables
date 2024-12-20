@@ -1,0 +1,47 @@
+CREATE TABLE clien (
+    id INT IDENTITY(1,1) PRIMARY KEY, -- Identifiant unique auto-incrémenté
+    nom NVARCHAR(50) NOT NULL,        -- Nom du client
+    prenom NVARCHAR(50) NOT NULL,    -- Prénom du client
+    email NVARCHAR(100) UNIQUE,      -- Email unique pour chaque client
+    date_inscription DATE DEFAULT GETDATE() -- Date d'inscription par défaut : aujourd'hui
+);
+
+INSERT INTO clien (nom, prenom, email)
+VALUES 
+('Alaya', 'Ihsen', 'ihsen.alaya@example.com'),
+('Doe', 'John', 'john.doe@example.com'),
+('Smith', 'Jane', 'jane.smith@example.com');
+
+CREATE TABLE produit (
+    id INT IDENTITY(1,1) PRIMARY KEY, -- Identifiant unique auto-incrémenté
+    nom NVARCHAR(100) NOT NULL,       -- Nom du produit
+    prix DECIMAL(10, 2) NOT NULL,     -- Prix du produit avec deux décimales
+    stock INT NOT NULL                -- Quantité en stock
+);
+
+INSERT INTO produit (nom, prix, stock)
+VALUES 
+('Ordinateur Portable', 999.99, 50),
+('Souris', 19.99, 200),
+('Clavier', 49.99, 150),
+('Écran', 199.99, 80),
+('Disque Dur Externe', 89.99, 60);
+
+
+----------------vider les tables------------------
+-- 1. Supprimer toutes les contraintes de clé étrangère
+DECLARE @sql NVARCHAR(MAX) = N'';
+
+SELECT @sql += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + '.' + QUOTENAME(OBJECT_NAME(parent_object_id)) +
+               ' DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13)
+FROM sys.foreign_keys;
+
+EXEC sp_executesql @sql;
+
+-- 2. Supprimer tous les tableaux
+SET @sql = N'';
+SELECT @sql += 'DROP TABLE ' + QUOTENAME(schema_name(schema_id)) + '.' + QUOTENAME(name) + ';' + CHAR(13)
+FROM sys.tables;
+
+EXEC sp_executesql @sql;
+

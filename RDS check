@@ -1,0 +1,3 @@
+Get-WindowsFeature -Name *RDS*
+Get-RDServer
+Get-RDSessionCollection

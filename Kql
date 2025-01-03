@@ -1,15 +1,20 @@
 AzureDiagnostics
 | where Category == "ApplicationGatewayAccessLog"
 | where TimeGenerated >= ago(24h)
-| where requestUri_s contains ""
-// On crée deux colonnes calculées :
+| where requestUri_s contains "blueway"
+//
+// On crée nos colonnes calculées
 | extend 
-    // timeTaken_d supposé être en millisecondes
+    // 'timeTaken_d' supposé être en millisecondes
     DurationMs = timeTaken_d, 
-    // On calcule le temps d'arrivée (début de la transaction)
+    // On calcule l'heure de début (approx) = fin - durée
     StartTime = TimeGenerated - totimespan(DurationMs * 1ms),
-    // On renomme TimeGenerated en EndTime pour clarifier qu'il s'agit de la fin
     EndTime = TimeGenerated
+//
+// On sélectionne les transactions dont la durée > 10s
+| where DurationMs > 10000
+//
+// On projette les champs utiles 
 | project 
     transactionId_g,
     StartTime,

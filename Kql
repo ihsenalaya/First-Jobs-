@@ -1,0 +1,23 @@
+AzureDiagnostics
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated >= ago(24h)
+| where requestUri_s contains ""
+// On crée deux colonnes calculées :
+| extend 
+    // timeTaken_d supposé être en millisecondes
+    DurationMs = timeTaken_d, 
+    // On calcule le temps d'arrivée (début de la transaction)
+    StartTime = TimeGenerated - totimespan(DurationMs * 1ms),
+    // On renomme TimeGenerated en EndTime pour clarifier qu'il s'agit de la fin
+    EndTime = TimeGenerated
+| project 
+    transactionId_g,
+    StartTime,
+    EndTime,
+    DurationMs,
+    clientIP_s,
+    backendIPAddress_s,
+    httpStatus_d,
+    backendHttpStatus_d,
+    requestUri_s
+| order by EndTime desc

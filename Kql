@@ -26,3 +26,77 @@ AzureDiagnostics
     backendHttpStatus_d,
     requestUri_s
 | order by EndTime desc
+
+
+
+
+//
+// 1) Préparer un bloc (let) pour AGW
+//
+let AGWLogs = AzureDiagnostics
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated >= ago(24h)
+| extend
+    DurationMs_AGW  = timeTaken_d,
+    StartTime_AGW   = TimeGenerated - totimespan(DurationMs_AGW * 1ms),
+    EndTime_AGW     = TimeGenerated
+| project
+    AGW_TransactionId = transactionId_g,
+    StartTime_AGW,
+    EndTime_AGW,
+    DurationMs_AGW,
+    requestUri_s,
+    clientIP_s,
+    backendIPAddress_s;
+
+//
+// 2) Préparer un bloc (let) pour APIM
+//
+let APIMLogs = AzureDiagnostics
+| where Category == "GatewayLogs" // ou "ApiManagementGatewayLogs"
+| where TimeGenerated >= ago(24h)
+| extend
+    DurationMs_APIM = timeTaken_d,
+    StartTime_APIM  = TimeGenerated - totimespan(DurationMs_APIM * 1ms),
+    EndTime_APIM    = TimeGenerated
+| project
+    APIM_CorrelationId = correlationId_s,  // Nom fictif - adapter selon vos logs
+    StartTime_APIM,
+    EndTime_APIM,
+    DurationMs_APIM,
+    apimRequestUri_s = requestUri_s,
+    callerIpAddress_s;
+
+//
+// 3) Joindre AGW et APIM (via transaction ID <-> correlation ID)
+//
+AGWLogs
+| join kind=inner APIMLogs on $left.AGW_TransactionId == $right.APIM_CorrelationId
+| project
+    AGW_TransactionId,
+    // --- AGW ---
+    StartTime_AGW,
+    EndTime_AGW,
+    DurationMs_AGW,
+    clientIP_s,
+    backendIPAddress_s,
+    requestUri_s,
+    // --- APIM ---
+    StartTime_APIM,
+    EndTime_APIM,
+    DurationMs_APIM,
+    apimRequestUri_s,
+    callerIpAddress_s
+| order by StartTime_AGW asc
+
+
+
+// Ex. logs APIM dans AzureDiagnostics, Category="GatewayLogs" (ou "ApiManagementGatewayLogs")
+AzureDiagnostics
+| where Category == "GatewayLogs"
+| where TimeGenerated >= ago(24h)
+| extend
+    DurationMs = timeTaken_d, 
+    StartTime_APIM = TimeGenerated - totimespan(DurationMs * 1ms),
+    EndTime_APIM   = TimeGenerated
+

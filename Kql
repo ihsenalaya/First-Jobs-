@@ -100,3 +100,10 @@ AzureDiagnostics
     StartTime_APIM = TimeGenerated - totimespan(DurationMs * 1ms),
     EndTime_APIM   = TimeGenerated
 
+
+AzureDiagnostics
+| where ResourceType == "NETWORKSECURITYGROUPS"
+| where OperationName == "NetworkSecurityGroupFlowEvent"
+| where Direction_s == "O"  // O pour Outbound
+| where Action_s == "D"     // D pour Deny
+| project TimeGenerated, SourceIP_s, DestinationIP_s, DestinationPort_d, Protocol_s, FlowState_s

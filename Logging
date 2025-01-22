@@ -1,0 +1,5 @@
+AuditLogs
+| where Category == "ApplicationManagement"
+| where OperationName has "Add" or OperationName has "Update" or OperationName has "Delete"
+| project TimeGenerated, OperationName, TargetResources, InitiatedBy, Result, AdditionalDetails
+| order by TimeGenerated desc

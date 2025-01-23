@@ -1,0 +1,124 @@
+# Récupérer toutes les machines virtuelles dans la subscription
+$vms = Get-AzVM -Status
+
+# Fonction pour valider le format de la valeur du tag autoShutdown
+function Test-AutoShutdownTagFormat {
+    param (
+        [string]$TagValue
+    )
+
+    # Séparer la chaine avec '|'
+    $segments = $TagValue -split '\s*\|\s*'
+
+    foreach ($segment in $segments) {
+        # Chaque segment doit être : <quelqueChose> <HH:MM-HH:MM>
+        # Exemple : "lundi 08:00-12:00"
+        # On peut vérifier avec une expression régulière :
+        #   1) Un ou plusieurs caractères non-blancs (jour) OU mots multiples ? 
+        #      On va autoriser la plupart des caractères alphabétiques + accentués si besoin
+        #   2) Un espace
+        #   3) hh:mm-hh:mm -> 2 digits : 2 digits, un tiret, puis 2 digits : 2 digits
+
+        # Regex pour quelque chose du style : "samedi 08:00-12:00"
+        # Si vous avez besoin de supporter des jours plus complexes, adaptez la partie jour.
+        $pattern = '^[\p{L}]+(\s+[\p{L}]+)*\s+\d{2}:\d{2}-\d{2}:\d{2}$'
+        
+        if ($segment -notmatch $pattern) {
+            return $false  # dès qu’un segment est invalide, on retourne False
+        }
+    }
+
+    return $true  # si tous les segments sont valides, on retourne True
+}
+
+# Obtenir l'énumérateur du jour actuel
+$jourActuel = (Get-Date).DayOfWeek  # Sunday=0, Monday=1, ...
+# Obtenir l'heure actuelle
+$heureActuelle = Get-Date -Format "HH:mm"
+
+# Parcourir chaque VM
+foreach ($vm in $vms) {
+    # Variables par défaut
+    $autoshutdown = $false
+    $shouldStart  = $false
+
+    # Vérifier si on est le week-end (Saturday=6 ou Sunday=0)
+    if ($jourActuel -eq [System.DayOfWeek]::Saturday -or $jourActuel -eq [System.DayOfWeek]::Sunday) {
+        Write-Output "=== VM: $($vm.Name) ==="
+        Write-Output "Nous sommes le week-end ($jourActuel). Arrêt forcé pour la VM."
+        $autoshutdown = $true
+    }
+    elseif ($vm.Tags.ContainsKey("autoShutdown")) {
+        Write-Output "=== VM: $($vm.Name) ==="
+        # Récupérer la valeur du tag
+        $autoShutdownTagValue = $vm.Tags["autoShutdown"]
+
+        # Vérifier le format du tag
+        if (-not (Test-AutoShutdownTagFormat $autoShutdownTagValue)) {
+            Write-Output "Le format du tag autoShutdown est invalide pour la VM $($vm.Name)."
+            Write-Output "Tag attendu : 'jour hh:mm-hh:mm | jour hh:mm-hh:mm | ...'"
+            Write-Output "Valeur actuelle : '$autoShutdownTagValue'"
+            Write-Output "Aucune action ne sera effectuée sur cette VM."
+            continue  # Passe à la VM suivante sans exécuter la suite
+        }
+
+        # Si on arrive ici, le format est valide
+        $sequences = $autoShutdownTagValue -split '\s*\|\s*'
+        $days = @()
+        $times = @()
+
+        # Extraire les jours et les plages horaires
+        foreach ($sequence in $sequences) {
+            # On split une seule fois, par le premier espace
+            $split = $sequence -split '\s', 2
+            $days  += $split[0]
+            $times += $split[1]
+        }
+
+        # Récupérer le jour de la semaine en anglais pour comparer (ex: "Monday")
+        $currentDay = (Get-Date).DayOfWeek.ToString().ToLower()
+
+        # Parcourir le tableau des jours
+        for ($i = 0; $i -lt $days.Count; $i++) {
+            $tagDay = $days[$i].ToLower()  # rendre insensible à la casse
+            if ($tagDay -eq $currentDay) {
+                # Récupérer l'intervalle horaire
+                $horaires = $times[$i] -split '-'
+                $heureDebut = $horaires[0]
+                $heureFin   = $horaires[1]
+
+                # Vérifier si l'heure actuelle est entre [heureDebut - heureFin]
+                if (($heureActuelle -ge $heureDebut) -and ($heureActuelle -le $heureFin)) {
+                    $autoshutdown = $true
+                }
+            }
+        }
+    }
+    else {
+        # Pas de tag autoShutdown et pas le week-end
+        Write-Output "=== VM: $($vm.Name) ==="
+        Write-Output "Pas de tag autoShutdown. Aucune action."
+    }
+
+    # Vérifier si l'heure >= 07:00 pour un démarrage automatique (si autoshutdown = false)
+    if ($heureActuelle -ge "07:00") {
+        $shouldStart = $true
+    }
+
+    # -- Action : arrêter ou démarrer la VM selon la logique --
+    if ($autoshutdown) {
+        Write-Output "Arrêt de la VM $($vm.Name)..."
+        Stop-AzVM -ResourceGroupName $vm.ResourceGroupName -Name $vm.Name -Force
+        Write-Output "VM $($vm.Name) arrêtée."
+    }
+    elseif ($shouldStart) {
+        Write-Output "Démarrage de la VM $($vm.Name) (il est >= 07:00)..."
+        Start-AzVM -ResourceGroupName $vm.ResourceGroupName -Name $vm.Name
+        Write-Output "VM $($vm.Name) démarrée."
+    }
+    else {
+        Write-Output "Aucune action pour la VM $($vm.Name)."
+    }
+
+    Write-Output ""  # Ligne vide pour séparer
+}

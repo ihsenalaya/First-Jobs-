@@ -1,0 +1,158 @@
+Étape 1 : Accéder à Azure Cloud Shell
+
+1. Connectez-vous au portail Azure avec vos identifiants.
+
+
+2. Cliquez sur l'icône Cloud Shell en haut à droite (icône de terminal).
+
+
+3. Choisissez PowerShell comme environnement si ce n'est pas déjà configuré.
+
+
+
+
+---
+
+Étape 2 : Préparer l'environnement Cloud Shell
+
+1. Une fois dans Cloud Shell, vérifiez que le module Az est installé (il est généralement préinstallé dans Cloud Shell).
+
+
+2. Assurez-vous que votre compte Azure est déjà connecté (ce sera fait automatiquement si vous utilisez Cloud Shell dans le portail Azure).
+
+
+
+
+---
+
+Étape 3 : Charger et exécuter le script
+
+1. Créer un nouveau fichier PowerShell :
+
+Dans Cloud Shell, exécutez cette commande pour ouvrir un éditeur intégré (comme nano) :
+
+nano CheckBlobsLastModified.ps1
+
+Copiez-collez le script PowerShell ci-dessous dans l'éditeur.
+
+
+
+2. Sauvegarder le fichier :
+
+Dans nano, utilisez CTRL+O pour enregistrer, puis CTRL+X pour quitter l'éditeur.
+
+
+
+3. Exécuter le script :
+
+Assurez-vous que le fichier est exécutable avec cette commande :
+
+chmod +x CheckBlobsLastModified.ps1
+
+Lancez le script en exécutant :
+
+./CheckBlobsLastModified.ps1
+
+
+
+
+
+---
+
+Étape 4 : Téléchargement des résultats CSV
+
+1. Une fois le script terminé, le fichier CSV sera créé dans le répertoire courant de votre session Cloud Shell.
+
+
+2. Pour télécharger le fichier, utilisez le bouton Télécharger dans le gestionnaire de fichiers intégré à Cloud Shell, ou utilisez cette commande pour copier le fichier vers votre stockage Azure :
+
+az storage blob upload --account-name <STORAGE_ACCOUNT> --container-name <CONTAINER> --file Blobs_Not_Modified_Over_One_Year.csv --name Blobs_Not_Modified_Over_One_Year.csv
+
+Remplacez <STORAGE_ACCOUNT> et <CONTAINER> par vos valeurs.
+
+
+
+
+---
+
+Script PowerShell à coller dans Cloud Shell
+
+Voici le script complet pour vérifier les blobs non modifiés depuis plus d'un an et exporter les résultats en CSV :
+
+# Définir la durée (1 an dans ce cas)
+$thresholdDate = (Get-Date).AddYears(-1)
+
+# Initialiser une liste pour stocker les résultats
+$results = @()
+
+# Obtenir toutes les souscriptions dans le tenant
+$subscriptions = Get-AzSubscription
+
+# Parcourir chaque souscription
+foreach ($subscription in $subscriptions) {
+    # Changer la souscription active
+    Set-AzContext -SubscriptionId $subscription.Id
+
+    Write-Output "Traitement de la souscription : $($subscription.Name)"
+
+    # Obtenir tous les comptes de stockage dans la souscription
+    $storageAccounts = Get-AzStorageAccount
+
+    foreach ($storageAccount in $storageAccounts) {
+        $context = $storageAccount.Context
+
+        # Obtenir tous les conteneurs dans le compte de stockage
+        $containers = Get-AzStorageContainer -Context $context
+
+        foreach ($container in $containers) {
+            # Obtenir tous les blobs dans le conteneur
+            $blobs = Get-AzStorageBlob -Container $container.Name -Context $context
+
+            foreach ($blob in $blobs) {
+                # Vérifier la date de la dernière modification
+                if ($blob.ICloudBlob.Properties.LastModified.DateTime -lt $thresholdDate) {
+                    # Ajouter les résultats à la liste
+                    $results += [PSCustomObject]@{
+                        Subscription       = $subscription.Name
+                        StorageAccount     = $storageAccount.StorageAccountName
+                        Container          = $container.Name
+                        BlobName           = $blob.Name
+                        LastModified       = $blob.ICloudBlob.Properties.LastModified.DateTime
+                    }
+                }
+            }
+        }
+    }
+}
+
+# Exporter les résultats dans un fichier CSV
+$csvPath = "Blobs_Not_Modified_Over_One_Year.csv"
+$results | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
+
+# Afficher un message de confirmation
+Write-Output "Les résultats ont été exportés vers : $csvPath"
+
+
+---
+
+Étape 5 : Résultats
+
+1. Une fois téléchargé, ouvrez le fichier CSV avec Excel ou tout autre outil compatible.
+
+
+2. Les colonnes incluent les informations suivantes :
+
+Souscription
+
+Compte de stockage
+
+Conteneur
+
+Nom du blob
+
+Dernière modification
+
+
+
+
+Si vous avez besoin d'assistance pour personnaliser le script ou pour utiliser Cloud Shell, n'hésitez pas à demander !

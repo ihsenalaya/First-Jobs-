@@ -157,35 +157,47 @@ Dernière modification
 
 Si vous avez besoin d'assistance pour personnaliser le script ou pour utiliser Cloud Shell, n'hésitez pas à demander !
 
-# Définir la durée (1 an dans ce cas)
+# 1. Définir la date seuil (ici, 1 an)
 $thresholdDate = (Get-Date).AddYears(-1)
 
-# Obtenir tous les comptes de stockage dans l'abonnement
+# 2. Récupérer tous les comptes de stockage
 $storageAccounts = Get-AzStorageAccount
 
-# Parcourir chaque compte de stockage
+# 3. Parcourir chaque compte de stockage
 foreach ($storageAccount in $storageAccounts) {
+
+    # Récupérer le contexte du compte
     $context = $storageAccount.Context
 
-    # Obtenir tous les conteneurs dans le compte de stockage
+    # Récupérer la liste des conteneurs
     $containers = Get-AzStorageContainer -Context $context
 
     foreach ($container in $containers) {
-
-        # Obtenir tous les blobs dans le conteneur
+        # Récupérer tous les blobs du conteneur
         $blobs = Get-AzStorageBlob -Container $container.Name -Context $context
 
-        foreach ($blob in $blobs) {
-            # Vérifier la date de la dernière modification
-            if ($blob.ICloudBlob.Properties.LastModified.DateTime -lt $thresholdDate) {
-                # Afficher les blobs non modifiés depuis plus d'un an
-                Write-Output "Compte de stockage         : $($storageAccount.StorageAccountName)"
-                Write-Output "Conteneur                  : $($container.Name)"
-                Write-Output "Nom du blob                : $($blob.Name)"
-                Write-Output "Dernière modification      : $($blob.ICloudBlob.Properties.LastModified.DateTime)"
-                Write-Output "-------------------------------------------------------------------"
+        # Si le conteneur est vide
+        if (-not $blobs) {
+            Write-Output "Compte de stockage : $($storageAccount.StorageAccountName)"
+            Write-Output "Conteneur         : $($container.Name)"
+            Write-Output "=> AUCUN blob. Considéré comme non modifié depuis plus d'un an."
+            Write-Output "------------------------"
+        }
+        else {
+            # 4. Trouver la dernière date de modification la plus récente parmi tous les blobs
+            $maxLastModified = $blobs | 
+                Sort-Object { $_.ICloudBlob.Properties.LastModified.DateTime } -Descending |
+                Select-Object -First 1 |
+                ForEach-Object { $_.ICloudBlob.Properties.LastModified.DateTime }
+
+            # 5. Comparer la date la plus récente avec le seuil
+            if ($maxLastModified -lt $thresholdDate) {
+                Write-Output "Compte de stockage : $($storageAccount.StorageAccountName)"
+                Write-Output "Conteneur         : $($container.Name)"
+                Write-Output "Dernière modification (la plus récente) : $maxLastModified"
+                Write-Output "=> Non modifié depuis plus d'un an."
+                Write-Output "------------------------"
             }
         }
     }
 }
-

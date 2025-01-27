@@ -156,3 +156,44 @@ Dernière modification
 
 
 Si vous avez besoin d'assistance pour personnaliser le script ou pour utiliser Cloud Shell, n'hésitez pas à demander !
+
+
+# Import Azure module
+Import-Module Az
+
+# Connect to Azure account (vous pouvez commenter cette ligne si vous utilisez un contexte déjà connecté)
+Connect-AzAccount
+
+# Définir la durée (1 an dans ce cas)
+$thresholdDate = (Get-Date).AddYears(-1)
+
+# Obtenir tous les comptes de stockage dans l'abonnement
+$storageAccounts = Get-AzStorageAccount
+
+# Parcourir chaque compte de stockage
+foreach ($storageAccount in $storageAccounts) {
+    $context = $storageAccount.Context
+
+    # Obtenir tous les conteneurs dans le compte de stockage
+    $containers = Get-AzStorageContainer -Context $context
+
+    foreach ($container in $containers) {
+        # Obtenir tous les blobs dans le conteneur
+        $blobs = Get-AzStorageBlob -Container $container.Name -Context $context
+
+        foreach ($blob in $blobs) {
+            # Vérifier la date de la dernière modification
+            if ($blob.ICloudBlob.Properties.LastModified.DateTime -lt $thresholdDate) {
+                # Afficher les blobs non modifiés depuis plus d'un an
+                Write-Output "Compte de stockage : $($storageAccount.StorageAccountName)"
+                Write-Output "Conteneur         : $($container.Name)"
+                Write-Output "Nom du blob       : $($blob.Name)"
+                Write-Output "Dernière modification : $($blob.ICloudBlob.Properties.LastModified.DateTime)"
+                Write-Output "------------------------"
+            }
+        }
+    }
+}
+
+# Fin du script
+

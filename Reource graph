@@ -1,10 +1,11 @@
 Resources
 | where type == "microsoft.compute/disks"
 | where sku.tier == "Premium" or sku.name contains "SSD"
+| where isnotempty(managedBy) // Condition pour vérifier que le disque est attaché
 | join kind=leftouter (
     ResourceContainers
     | where type == "microsoft.resources/subscriptions"
     | project subscriptionId, subscriptionName = name
 ) on subscriptionId
 | where subscriptionName !startswith "PRD"
-| project diskName = name, sku.name, sku.tier, subscriptionName, resourceGroup
+| project diskName = name, sku.name, sku.tier, subscriptionName, resourceGroup, attachedVM = managedBy

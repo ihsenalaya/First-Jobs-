@@ -201,3 +201,37 @@ foreach ($storageAccount in $storageAccounts) {
         }
     }
 }
+
+
+#!/bin/bash
+# Assurez-vous d'être connecté avec `az login`
+
+echo -e "BlobName\tStorageAccount\tLastModified\tResourceGroup"
+
+# Récupérer la liste des comptes de stockage avec leur groupe de ressources
+storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
+
+# Parcourir chaque compte de stockage
+while IFS=$'\t' read -r account resourceGroup; do
+    # Récupérer la clé d'accès du compte
+    accountKey=$(az storage account keys list --account-name "$account" --query "[0].value" -o tsv)
+    
+    # Récupérer la liste des conteneurs dans le compte
+    containers=$(az storage container list --account-name "$account" --account-key "$accountKey" --query "[].name" -o tsv)
+    
+    # Parcourir chaque conteneur
+    for container in $containers; do
+        # Récupérer la liste des blobs dans le conteneur avec le nom et la date de dernière modification
+        blobs=$(az storage blob list \
+                  --account-name "$account" \
+                  --account-key "$accountKey" \
+                  --container-name "$container" \
+                  --query "[].{name:name, lastModified:properties.lastModified}" \
+                  -o tsv)
+        
+        # Parcourir chaque blob et afficher les informations
+        while IFS=$'\t' read -r blobName lastModified; do
+            echo -e "$blobName\t$account\t$lastModified\t$resourceGroup"
+        done <<< "$blobs"
+    done
+done <<< "$storageAccounts"

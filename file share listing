@@ -1,42 +1,64 @@
 #!/bin/bash
 
-# Définir l'ID de l'abonnement Azure si besoin
-# az account set --subscription "VOTRE_ID_ABONNEMENT"
+###############################################################################
+# Éventuellement, décommentez la ligne suivante pour fixer explicitement l'abonnement :
+# az account set --subscription "VOTRE_ID_D_ABONNEMENT"
+###############################################################################
 
-# Obtenir la liste des comptes de stockage dans l'abonnement :
+# 1. Récupérer la liste des comptes de stockage : nom + resourceGroup en TSV
 storage_accounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
 
-# Parcourir chaque compte de stockage :
+# 2. Parcourir chaque compte de stockage
 while IFS=$'\t' read -r storage_account resource_group; do
-    echo "------------------------------------------------------------"
+
+    echo "============================================================"
     echo "Compte de stockage : $storage_account"
     echo "Groupe de ressources : $resource_group"
-    echo "------------------------------------------------------------"
+    echo "============================================================"
 
-    # Obtenir la liste des File Shares dans le compte de stockage :
+    # 3. Récupérer la première clé du compte de stockage
+    account_key=$(az storage account keys list \
+        --resource-group "$resource_group" \
+        --account-name "$storage_account" \
+        --query '[0].value' \
+        -o tsv)
+
+    # Si la clé est vide, on ignore ce compte (par exemple, si vous n'avez pas les droits)
+    if [ -z "$account_key" ]; then
+        echo "Impossible de récupérer la clé pour le compte '$storage_account'."
+        echo "Vérifiez vos droits ou l'existence du compte."
+        echo ""
+        continue
+    fi
+
+    # 4. Lister les File Shares dans le compte de stockage
     file_shares=$(az storage share list \
         --account-name "$storage_account" \
+        --account-key "$account_key" \
         --query "[].name" \
         -o tsv)
 
-    # Parcourir chaque File Share :
+    # 5. Parcourir chaque File Share trouvé
     while IFS= read -r file_share; do
-        # Récupérer les détails du File Share (quota et date de dernière modification) :
+        # Récupérer les détails du File Share (quota + date de dernière modification)
         share_details=$(az storage share show \
-            --account-name "$storage_account" \
             --name "$file_share" \
-            --query "{size:properties.quota, lastModified:properties.lastModified}" \
+            --account-name "$storage_account" \
+            --account-key "$account_key" \
+            --query "{size:quota, lastModified:lastModifiedTime}" \
             -o json)
 
-        # Extraire la taille (quota) et la date de dernière modification :
+        # Extraire la taille (quota) et la date de dernière modification
         size=$(echo "$share_details" | jq -r '.size')
         last_modified=$(echo "$share_details" | jq -r '.lastModified')
 
-        # Afficher les informations :
+        # Affichage des informations
         echo "  - File Share         : $file_share"
-        echo "    * Taille (quota)   : ${size} Go"
+        echo "    * Taille (quota)   : $size Go"
         echo "    * Dernière modif.  : $last_modified"
         echo ""
+
     done <<< "$file_shares"
 
+    echo ""
 done <<< "$storage_accounts"

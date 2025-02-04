@@ -33,7 +33,7 @@ while IFS=$'\t' read -r subId subName; do
         while IFS=$'\t' read -r shareName quota; do
             # Récupérer les statistiques de la file share (espace utilisé en octets)
             usageBytes=$(az storage share stats \
-                           --account-name "$account" \
+--account-name "$account" \
                            --account-key "$accountKey" \
                            --name "$shareName" \
                            --query "shareUsage" -o tsv)
@@ -57,3 +57,39 @@ az storage file list \
   --query "[].{Nom:name, Taille:properties.contentLength, DateModification:properties.lastModified}" \
   --output table
 
+
+
+
+#!/bin/bash
+# Ce script nécessite que l'Azure CLI soit installé et que vous soyez connecté via 'az login'
+
+# Récupère la liste de tous les comptes de stockage avec leur nom et le groupe de ressources associé
+storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
+
+# Affichage de l'en-tête
+printf "%-20s %-20s %-30s %-15s %-40s\n" "ResourceGroup" "StorageAccount" "ShareName" "UsageBytes" "LastModified"
+printf "%-20s %-20s %-30s %-15s %-40s\n" "-------------" "--------------" "---------" "----------" "------------"
+
+# Parcours de chaque compte de stockage
+while IFS=$'\t' read -r accountName resourceGroup
+do
+    # Récupère la clé du compte (la première clé disponible)
+    accountKey=$(az storage account keys list --account-name "$accountName" --resource-group "$resourceGroup" --query "[0].value" -o tsv)
+
+    # Liste les file shares du compte
+    shares=$(az storage share list --account-name "$accountName" --account-key "$accountKey" --query "[].name" -o tsv)
+
+    # Pour chaque file share
+    for shareName in $shares
+    do
+        # Récupère la taille utilisée de la file share en octets
+        usageBytes=$(az storage share stats --name "$shareName" --account-name "$accountName" --account-key "$accountKey" --query "shareUsageBytes" -o tsv)
+        
+        # Récupère les détails de la file share (dont la date de dernière modification)
+        lastModified=$(az storage share show --name "$shareName" --account-name "$accountName" --account-key "$accountKey" --query "lastModified" -o tsv)
+        
+        # Affiche les informations formatées
+        printf "%-20s %-20s %-30s %-15s %-40s\n" "$resourceGroup" "$accountName" "$shareName" "$usageBytes" "$lastModified"
+    done
+
+done <<< "$storageAccounts"

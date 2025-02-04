@@ -206,8 +206,8 @@ foreach ($storageAccount in $storageAccounts) {
 #!/bin/bash
 # Assurez-vous d'être connecté avec `az login`
 
-# Affichage de l'en-tête
-echo -e "BlobName\tStorageAccount\tLastModified\tTaille (octets)\tResourceGroup"
+# Affichage de l'en-tête (note : la taille est désormais affichée en GB)
+echo -e "BlobName\tStorageAccount\tLastModified\tTaille (GB)\tResourceGroup"
 
 # Récupérer la liste des comptes de stockage avec leur groupe de ressources
 storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
@@ -222,7 +222,7 @@ while IFS=$'\t' read -r account resourceGroup; do
     
     # Parcourir chaque conteneur
     for container in $containers; do
-        # Récupérer la liste des blobs dans le conteneur avec le nom, la date de dernière modification et la taille
+        # Récupérer la liste des blobs dans le conteneur avec le nom, la date de dernière modification et la taille en octets
         blobs=$(az storage blob list \
                   --account-name "$account" \
                   --account-key "$accountKey" \
@@ -232,7 +232,13 @@ while IFS=$'\t' read -r account resourceGroup; do
         
         # Parcourir chaque blob et afficher les informations
         while IFS=$'\t' read -r blobName lastModified size; do
-            echo -e "$blobName\t$account\t$lastModified\t$size\t$resourceGroup"
+            # Convertir la taille en GB (1 GB = 1073741824 octets)
+            if [[ -n "$size" ]]; then
+                sizeInGB=$(awk "BEGIN {printf \"%.2f\", $size/1073741824}")
+            else
+                sizeInGB="0.00"
+            fi
+            echo -e "$blobName\t$account\t$lastModified\t$sizeInGB\t$resourceGroup"
         done <<< "$blobs"
     done
 done <<< "$storageAccounts"

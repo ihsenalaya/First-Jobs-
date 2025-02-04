@@ -1,0 +1,51 @@
+#!/bin/bash
+# Vérifiez que vous êtes connecté(e) à Azure avec `az login`
+
+# Récupérer la liste des subscriptions du tenant avec leur ID et nom
+subscriptions=$(az account list --query "[].{id:id, name:name}" -o tsv)
+
+# Parcourir chaque subscription
+while IFS=$'\t' read -r subId subName; do
+    echo -e "\n========== Subscription : $subName ($subId) =========="
+    # Définir la subscription active
+    az account set --subscription "$subId"
+    
+    # Récupérer la liste des comptes de stockage dans la subscription
+    storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
+    
+    # Parcourir chaque compte de stockage
+    while IFS=$'\t' read -r account resourceGroup; do
+        echo -e "\n-- Compte de stockage : $account (Resource Group : $resourceGroup)"
+        
+        # Récupérer la clé d'accès du compte (nécessaire pour interroger les file shares)
+        accountKey=$(az storage account keys list --account-name "$account" --query "[0].value" -o tsv)
+        
+        # Récupérer la liste des file shares dans le compte, en récupérant le nom et le quota
+        shares=$(az storage share list \
+                    --account-name "$account" \
+                    --account-key "$accountKey" \
+                    --query "[].{name:name, quota:quota}" -o tsv)
+        
+        # Afficher un en-tête pour les file shares du compte
+        echo -e "ShareName\tStorageAccount\tUsage (GB)\tQuota (GB)\tResourceGroup"
+        
+        # Parcourir chaque file share et afficher les informations
+        while IFS=$'\t' read -r shareName quota; do
+            # Récupérer les statistiques de la file share (espace utilisé en octets)
+            usageBytes=$(az storage share stats \
+                           --account-name "$account" \
+                           --account-key "$accountKey" \
+                           --name "$shareName" \
+                           --query "shareUsage" -o tsv)
+            
+            # Conversion de l'espace utilisé en GB (1 GB = 1073741824 octets)
+            if [[ -n "$usageBytes" ]]; then
+                usageGB=$(awk "BEGIN {printf \"%.2f\", $usageBytes/1073741824}")
+            else
+                usageGB="0.00"
+            fi
+            
+            echo -e "$shareName\t$account\t$usageGB\t$quota\t$resourceGroup"
+        done <<< "$shares"
+    done <<< "$storageAccounts"
+done <<< "$subscriptions"

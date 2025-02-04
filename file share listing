@@ -1,95 +1,32 @@
 #!/bin/bash
-# Vérifiez que vous êtes connecté(e) à Azure avec `az login`
 
-# Récupérer la liste des subscriptions du tenant avec leur ID et nom
-subscriptions=$(az account list --query "[].{id:id, name:name}" -o tsv)
+# Définir l'abonnement Azure (si nécessaire)
+# az account set --subscription "VOTRE_ID_ABONNEMENT"
 
-# Parcourir chaque subscription
-while IFS=$'\t' read -r subId subName; do
-    echo -e "\n========== Subscription : $subName ($subId) =========="
-    # Définir la subscription active
-    az account set --subscription "$subId"
-    
-    # Récupérer la liste des comptes de stockage dans la subscription
-    storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
-    
-    # Parcourir chaque compte de stockage
-    while IFS=$'\t' read -r account resourceGroup; do
-        echo -e "\n-- Compte de stockage : $account (Resource Group : $resourceGroup)"
-        
-        # Récupérer la clé d'accès du compte (nécessaire pour interroger les file shares)
-        accountKey=$(az storage account keys list --account-name "$account" --query "[0].value" -o tsv)
-        
-        # Récupérer la liste des file shares dans le compte, en récupérant le nom et le quota
-        shares=$(az storage share list \
-                    --account-name "$account" \
-                    --account-key "$accountKey" \
-                    --query "[].{name:name, quota:quota}" -o tsv)
-        
-        # Afficher un en-tête pour les file shares du compte
-        echo -e "ShareName\tStorageAccount\tUsage (GB)\tQuota (GB)\tResourceGroup"
-        
-        # Parcourir chaque file share et afficher les informations
-        while IFS=$'\t' read -r shareName quota; do
-            # Récupérer les statistiques de la file share (espace utilisé en octets)
-            usageBytes=$(az storage share stats \
---account-name "$account" \
-                           --account-key "$accountKey" \
-                           --name "$shareName" \
-                           --query "shareUsage" -o tsv)
-            
-            # Conversion de l'espace utilisé en GB (1 GB = 1073741824 octets)
-            if [[ -n "$usageBytes" ]]; then
-                usageGB=$(awk "BEGIN {printf \"%.2f\", $usageBytes/1073741824}")
-            else
-                usageGB="0.00"
-            fi
-            
-            echo -e "$shareName\t$account\t$usageGB\t$quota\t$resourceGroup"
-        done <<< "$shares"
-    done <<< "$storageAccounts"
-done <<< "$subscriptions"
+# Obtenir la liste des comptes de stockage dans l'abonnement
+storage_accounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
 
+# Parcourir chaque compte de stockage
+while IFS=$'\t' read -r storage_account resource_group; do
+    echo "Compte de stockage: $storage_account (Groupe de ressources: $resource_group)"
 
-az storage file list \
-  --account-name <NomDuCompteDeStockage> \
-  --share-name <NomDuFileShare> \
-  --query "[].{Nom:name, Taille:properties.contentLength, DateModification:properties.lastModified}" \
-  --output table
+    # Obtenir la liste des partages de fichiers dans le compte de stockage
+    file_shares=$(az storage share list --account-name "$storage_account" --query "[].{name:name}" -o tsv)
 
+    # Parcourir chaque partage de fichiers
+    while IFS=$'\t' read -r file_share; do
+        # Obtenir les détails du partage de fichiers
+        share_details=$(az storage share show --name "$file_share" --account-name "$storage_account" --query "{size:properties.quota, lastModified:properties.lastModified}" -o json)
 
+        # Extraire la taille et la date de modification
+        size=$(echo "$share_details" | jq -r '.size')
+        last_modified=$(echo "$share_details" | jq -r '.lastModified')
 
+        # Afficher les informations du partage de fichiers
+        echo "  Partage de fichiers: $file_share"
+        echo "    Taille: $size Go"
+        echo "    Dernière modification: $last_modified"
+    done <<< "$file_shares"
 
-#!/bin/bash
-# Ce script nécessite que l'Azure CLI soit installé et que vous soyez connecté via 'az login'
-
-# Récupère la liste de tous les comptes de stockage avec leur nom et le groupe de ressources associé
-storageAccounts=$(az storage account list --query "[].{name:name, resourceGroup:resourceGroup}" -o tsv)
-
-# Affichage de l'en-tête
-printf "%-20s %-20s %-30s %-15s %-40s\n" "ResourceGroup" "StorageAccount" "ShareName" "UsageBytes" "LastModified"
-printf "%-20s %-20s %-30s %-15s %-40s\n" "-------------" "--------------" "---------" "----------" "------------"
-
-# Parcours de chaque compte de stockage
-while IFS=$'\t' read -r accountName resourceGroup
-do
-    # Récupère la clé du compte (la première clé disponible)
-    accountKey=$(az storage account keys list --account-name "$accountName" --resource-group "$resourceGroup" --query "[0].value" -o tsv)
-
-    # Liste les file shares du compte
-    shares=$(az storage share list --account-name "$accountName" --account-key "$accountKey" --query "[].name" -o tsv)
-
-    # Pour chaque file share
-    for shareName in $shares
-    do
-        # Récupère la taille utilisée de la file share en octets
-        usageBytes=$(az storage share stats --name "$shareName" --account-name "$accountName" --account-key "$accountKey" --query "shareUsageBytes" -o tsv)
-        
-        # Récupère les détails de la file share (dont la date de dernière modification)
-        lastModified=$(az storage share show --name "$shareName" --account-name "$accountName" --account-key "$accountKey" --query "lastModified" -o tsv)
-        
-        # Affiche les informations formatées
-        printf "%-20s %-20s %-30s %-15s %-40s\n" "$resourceGroup" "$accountName" "$shareName" "$usageBytes" "$lastModified"
-    done
-
-done <<< "$storageAccounts"
+    echo ""
+done <<< "$storage_accounts"

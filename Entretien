@@ -20,3 +20,14 @@ Qu’en pensez-vous ?
 
 Cordialement,
 Ihsen Alaya
+Bonjour Jean-Baptiste,
+
+J'espère que tu vas bien.
+
+Dans le cadre du suivi des sources gourmandes dans l’environnement Claranet, j’ai remarqué que le compte de stockage st0oinfcbk051, dans la souscription PRD - Shared Infrastructure Services - 00, engendre un coût de 15 000 euros pour le mois de janvier, malgré la réservation, dont 6 000 euros facturés uniquement pour l’écriture dans le compte GRS Cool. Ce compte de stockage est utilisé pour la sauvegarde des backups des VMs (Veeam) et atteint actuellement 656,78 TiB.
+
+Je propose d’étudier avec Claranet la possibilité de mettre en place des règles de gestion du cycle de vie (lifecycle management) afin de transférer les données blob vers des niveaux d’accès plus appropriés (Froid ou Archive) ou de les supprimer en fin de cycle de vie. Cette approche permettrait de réduire le volume de stockage et d’optimiser les coûts.
+
+J’aimerais avoir ton avis sur cette proposition.
+
+Merci.

@@ -337,3 +337,21 @@ while IFS=$'\t' read -r subId subName; do
         done
     done <<< "$storageAccounts"
 done <<< "$subscriptions"
+
+
+#!/bin/bash
+
+# Variables
+STORAGE_ACCOUNT_NAME="nom_du_compte"
+CONTAINER_NAME="nom_du_conteneur"
+
+# Récupérer la clé du compte de stockage (ou utiliser un SAS token)
+STORAGE_KEY=$(az storage account keys list --account-name $STORAGE_ACCOUNT_NAME --query "[0].value" --output tsv)
+
+# Lister les blobs contenant "2025" dans leur nom
+az storage blob list \
+    --account-name $STORAGE_ACCOUNT_NAME \
+    --account-key $STORAGE_KEY \
+    --container-name $CONTAINER_NAME \
+    --query "[?contains(name, '2025')].[name]" \
+    --output table

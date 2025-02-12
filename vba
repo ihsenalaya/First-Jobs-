@@ -71,3 +71,39 @@ Sub ColorerCellulesUniques()
     MsgBox "Mise en surbrillance terminée !", vbInformation
 End Sub
 
+## verifier les répétitions dans deux colonnes 
+
+
+Sub ColorerCellulesCorrespondantes()
+    Dim ws As Worksheet
+    Dim lastRowA As Long
+    Dim lastRowC As Long
+    Dim cell As Range
+    Dim searchRange As Range
+    
+    ' Définir la feuille de travail (modifiez "Feuil1" par le nom de votre feuille)
+    Set ws = ThisWorkbook.Worksheets("Feuil1")
+    
+    ' Déterminer la dernière ligne utilisée dans la colonne A
+    lastRowA = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Déterminer la dernière ligne utilisée dans la colonne C
+    lastRowC = ws.Cells(ws.Rows.Count, "C").End(xlUp).Row
+    
+    ' Définir la plage de recherche dans la colonne C (à partir de la ligne 2)
+    Set searchRange = ws.Range("C2:C" & lastRowC)
+    
+    ' Parcourir chaque cellule de la colonne A (à partir de la ligne 2)
+    For Each cell In ws.Range("A2:A" & lastRowA)
+        ' Vérifier si la valeur de la cellule se trouve dans la plage de recherche (colonne C)
+        If Application.WorksheetFunction.CountIf(searchRange, cell.Value) > 0 Then
+            ' Si la valeur est trouvée, colorer la cellule en jaune
+            cell.Interior.Color = vbYellow
+        Else
+            ' Sinon, enlever la coloration
+            cell.Interior.ColorIndex = xlNone
+        End If
+    Next cell
+    
+    MsgBox "Vérification terminée !", vbInformation
+End Sub

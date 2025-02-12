@@ -1,0 +1,288 @@
+1. Les composants de coût avec Veeam sur Azure
+
+1. Licence Veeam
+
+Soit vous disposez d’une licence “perpétuelle” (achetée) avec maintenance annuelle, soit vous optez pour un abonnement (Veeam Universal License).
+
+Le coût dépend du nombre de VM ou de workloads protégés.
+
+
+
+2. Infrastructure Veeam dans Azure
+
+Vous payez la/les machine(s) virtuelle(s) sur lesquelles est installé le serveur de backup Veeam (Veeam Backup & Replication) et éventuellement des proxies.
+
+Vous payez aussi l’espace de stockage dans Azure pour déposer vos backups (Azure Blob Storage).
+
+Possibilité de coûts supplémentaires si vous utilisez des fonctionnalités avancées (réplication, archivage dans un autre type de stockage, etc.).
+
+
+
+3. Stockage Azure Blob
+
+Les backups peuvent être stockés dans du Blob Storage (Hot, Cool ou Archive) selon votre stratégie de rétention et vos besoins de restauration.
+
+Tarification au gigaoctet stocké par mois + éventuels coûts de transactions (opérations PUT/GET) et de récupération de données.
+
+Exemple simplifié : environ 0,018 € à 0,02 € par Go/mois pour le Hot, ~0,01 € pour le Cool, et ~0,0009-0,002 € pour l’Archive (les prix varient selon la région et évoluent dans le temps).
+
+
+
+4. Éventuels coûts de transfert sortant (egress)
+
+Si vous restaurez des données vers un site on-premises ou vers un autre cloud, vous pouvez être facturé pour la bande passante sortante depuis Azure.
+
+
+
+
+
+---
+
+2. Les composants de coût avec Azure Backup
+
+Contrairement à Veeam où vous installez votre propre infrastructure, Azure Backup est un service managé par Microsoft. Sa facturation se décompose en deux grandes parties :
+
+1. Coût de protection par instance
+
+Chaque VM, base de données ou serveur physique protégé est considéré comme une “instance”.
+
+Microsoft applique un tarif mensuel par instance, généralement sur la base de la taille des données sauvegardées.
+
+Exemple (chiffres indicatifs, à vérifier avec la calculette Azure) :
+
+Jusqu’à 50 Go : quelques euros par instance et par mois (ex. ~4-5 €/mois).
+
+Entre 50 Go et 500 Go : ~8-10 €/mois.
+
+Au-delà de 500 Go, le prix augmente par tranche supplémentaire de 500 Go.
+
+
+
+
+2. Coût du stockage dans le Recovery Services Vault
+
+Vous choisissez généralement entre LRS (Local Redundant Storage) et GRS (Geo-Redundant Storage).
+
+LRS est moins cher que GRS, mais propose une redondance locale uniquement.
+
+Les tarifs évoluent régulièrement, mais pour donner un ordre de grandeur :
+
+LRS : ~0,02 €/Go/mois
+
+GRS : ~0,04 €/Go/mois
+
+
+Il n’y a pas de frais de transaction (types PUT/GET) spécifiques dans le Recovery Services Vault comme dans le Blob Storage standard, tout est englobé dans le coût du service.
+
+Attention, si vous restaurez des données vers l’extérieur d’Azure (on-premises), il peut y avoir des coûts de sortie (egress).
+
+
+
+
+À noter : Avec Azure Backup, vous n’avez pas besoin de maintenir un serveur de backup (pas de coût de VM dédiée, pas de licence Veeam). Le service est complètement managé.
+
+
+---
+
+3. Méthodologie pour comparer
+
+Pour évaluer la bascule depuis Veeam vers Azure Backup, vous pouvez procéder comme suit :
+
+1. Lister vos VM (ou autres workloads) protégés
+
+Nombre de VM, taille moyenne des données sauvegardées par VM, fréquence et durée de rétention.
+
+
+
+2. Estimer le coût Veeam actuel
+
+Coût de la licence : si vous payez un abonnement VUL (Veeam Universal License), calculez le montant annuel / mensuel.
+
+Coût de l’infrastructure :
+
+Prix de la VM ou des VMs (type de machine, CPU/RAM, durée d’exécution, etc.).
+
+Coûts éventuels de disques managés, d’adressage IP, etc.
+
+
+Coût de stockage Azure :
+
+Combien de téraoctets stockés dans Azure Blob, et dans quelle classe (Hot/Cool/Archive) ?
+
+Ajouter les frais éventuels de transactions PUT/GET, en fonction de votre stratégie.
+
+
+Coûts de transfert ou de restauration : si vous sortez régulièrement des données, évaluez la bande passante sortante.
+
+
+
+3. Estimer le coût Azure Backup
+
+Protection par instance :
+
+Faites un tableau du nombre de VM, leur taille (en termes de données sauvegardées), et appliquez la grille tarifaire Azure Backup (en tenant compte des éventuelles tranches >50 Go, >500 Go, etc.).
+
+
+Stockage (LRS ou GRS) :
+
+Calculez le volume total de données qui seront stockées dans le Recovery Services Vault.
+
+Appliquez la tarification LRS ou GRS souhaitée.
+
+
+Vérifiez si vous avez besoin de redondance géographique. La différence entre LRS et GRS peut avoir un gros impact sur la facture.
+
+
+
+4. Comparer sur la base d’un scénario concret
+
+Par exemple, sur 1 an de sauvegardes, avec 100 VM, 10 To de données, etc.
+
+Prenez aussi en compte la rétention (rétention courte, hebdomadaire, mensuelle, annuelle) qui va influer sur le volume total stocké.
+
+
+
+5. Ne pas oublier les aspects opérationnels
+
+Avec Azure Backup, vous n’avez plus à gérer l’infrastructure de sauvegarde (système d’exploitation de la VM Veeam, mises à jour, etc.).
+
+Cela peut représenter une économie de temps et de coûts indirects (charges d’administration, maintenance).
+
+Veeam, en revanche, peut offrir d’autres fonctionnalités avancées (Instant VM Recovery, SureBackup, etc.). Assurez-vous qu’Azure Backup répond à tous vos besoins fonctionnels.
+
+
+
+
+
+---
+
+4. Exemple simplifié de calcul
+
+Imaginons un scénario :
+
+50 VM sur Azure, chacune contenant ~100 Go de données sauvegardées.
+
+Rétention : 30 jours.
+
+
+4.1. Coût Veeam (exemple hypothétique)
+
+Licence Veeam : supposons un coût d’abonnement ~2000 €/an (soit ~167 €/mois) pour protéger 50 VM (ce chiffre dépend fortement de votre contrat et du type de licence).
+
+VM (infrastructure Veeam) :
+
+Une VM type D4s_v3 (4 vCPU, 16 Go RAM) + disques + backup proxy éventuel : ~200-300 €/mois au total.
+
+
+Stockage Blob :
+
+50 VM x 100 Go = 5 To de données “pleines” (vous pouvez avoir de la déduplication ou compression, mais prenons un calcul simple).
+
+En Hot Storage : ~0,018–0,02 € /Go/mois = 90–100 €/mois pour 5 To.
+
+Total mensuel stockage (hors transactions) : ~100 €.
+
+
+Total (hors egress) : ~167 + 250 + 100 = ~517 €/mois (exemple très approximatif).
+
+
+4.2. Coût Azure Backup (exemple hypothétique)
+
+Protection par instance :
+
+50 VM, chaque VM >50 Go et <500 Go.
+
+Azure Backup facture environ 8-10 €/mois/VM dans cette fourchette. Supposons ~8 € (selon région).
+
+50 VM x 8 €/mois = 400 €/mois.
+
+
+Stockage Recovery Services Vault :
+
+5 To au total, en LRS : ~0,02 €/Go/mois = 100 €/mois.
+
+Total mensuel stockage : ~100 €.
+
+
+Total mensuel : 400 (instances) + 100 (stockage) = ~500 €/mois.
+
+
+Ici, l’exemple fictif montre que, sur la partie “facture brute”, Veeam et Azure Backup peuvent être relativement proches (517 vs 500 €/mois). La différence se fera sur :
+
+Les vrais coûts de licence Veeam (qui peuvent être plus ou moins élevés selon votre contrat).
+
+Les performances et fonctionnalités que vous gagnez ou perdez.
+
+Les coûts d’administration (maintenance d’un serveur Veeam versus service managé).
+
+
+
+---
+
+5. Autres facteurs à prendre en compte
+
+1. Évolutivité / Ajustement
+
+Azure Backup facture à l’usage (instances et Go). C’est très simple à faire évoluer.
+
+Veeam vous demandera peut-être d’ajuster la licence si le nombre de VM augmente beaucoup. Il faudra aussi dimensionner l’infrastructure.
+
+
+
+2. Rétention longue durée (Long-Term Retention)
+
+Si vous conservez des backups plusieurs années, vérifiez l’option Archive Storage côté Veeam (Azure Archive Blob) vs. la gestion de la rétention dans Azure Backup.
+
+Azure Backup ne supporte pas directement le tiers “Archive” du Recovery Services Vault. On peut toutefois utiliser d’autres mécanismes (Azure Backup pour SAP HANA, etc. évoluent, mais c’est parfois plus complexe).
+
+
+
+3. Bande passante / Sortie de données
+
+La plupart des restaurations se font dans Azure (pas de frais egress).
+
+Si vous rapatriez souvent des données on-premises, vérifiez l’impact sur votre facture.
+
+
+
+4. Fonctionnalités avancées
+
+Veeam propose Instant Recovery, SureBackup, orchestration de DR, test de patch dans des “labs virtuels”, etc.
+
+Azure Backup est plus basique sur ces aspects ; pour la réplication ou le DR complet, Microsoft propose plutôt Azure Site Recovery (ASR).
+
+
+
+5. Support / Compétences
+
+Veeam : support et communauté très actifs, mais nécessite des compétences spécifiques pour gérer l’infrastructure.
+
+Azure Backup : support Microsoft, configuration plus simple si vous êtes déjà familier avec Azure.
+
+
+
+
+
+---
+
+Conclusion
+
+Pour comparer les coûts, vous devez lister précisément :
+
+Le coût actuel de votre infrastructure Veeam (licence + VM(s) + stockage Blob + administration).
+
+Le coût estimé avec Azure Backup (coût par instance + stockage LRS/GRS + éventuelle sortie de données).
+
+
+Ensuite, confrontez ces chiffres à vos exigences fonctionnelles (RTO/RPO, granularité de restauration, etc.) et à vos contraintes opérationnelles (complexité, maintenance). Dans de nombreux cas, Azure Backup peut s’avérer intéressant si :
+
+Vous n’avez pas besoin des fonctionnalités avancées de Veeam (Instant Recovery, sandbox, etc.).
+
+Vous souhaitez réduire l’empreinte d’infrastructure et simplifier la gestion de la sauvegarde.
+
+Votre plan de rétention n’engendre pas un coût de stockage trop important dans Azure Backup.
+
+
+En revanche, si vous utilisez fortement les fonctions premium de Veeam ou si vous êtes dans un environnement multi-cloud/hybride complexe, Veeam peut rester plus adapté malgré un coût potentiellement plus élevé.
+
+Astuce finale : n’hésitez pas à utiliser la Calculette de pricing Azure pour simuler le coût d’Azure Backup selon vos besoins (taille, rétention, nombre d’instances) et à comparer avec vos factures actuelles Veeam + Azure Blob.

@@ -1,0 +1,65 @@
+Documentation : Réservation des Machines Virtuelles dans Microsoft Azure
+
+Introduction
+
+La réservation des machines virtuelles dans Microsoft Azure permet aux entreprises de réaliser des économies importantes en s'engageant sur une période d'un ou trois ans. Ce guide explique les étapes pour réserver une machine virtuelle et optimiser les coûts.
+
+1. Prérequis
+
+Avant de réserver une machine virtuelle, assurez-vous que :
+
+Vous disposez d'un abonnement Azure actif.
+
+Vous avez les permissions nécessaires (propriétaire ou contributeur sur la facturation).
+
+Vous avez analysé vos besoins en ressources pour choisir la meilleure option de réservation.
+
+2. Avantages des Réservations Azure
+
+Réduction des coûts jusqu'à 72 % par rapport aux tarifs Pay-as-you-go.
+
+Accès garanti aux ressources réservées.
+
+Flexibilité avec des options d'annulation et d'échange.
+
+3. Processus de Réservation d'une Machine Virtuelle
+
+3.1 Accéder au portail Azure
+
+Connectez-vous à votre compte Azure via portal.azure.com.
+
+Allez dans la section Coûts de gestion et facturation.
+
+Sélectionnez Réservations Azure.
+
+3.2 Choisir le type de réservation
+
+Cliquez sur Ajouter une réservation.
+
+Sélectionnez Machine Virtuelle.
+
+Choisissez la région et la taille de la machine virtuelle.
+
+Déterminez la durée de réservation (1 an ou 3 ans).
+
+Validez votre choix.
+
+3.3 Finalisation et Paiement
+
+Vérifiez les détails de votre réservation.
+
+Sélectionnez l'option de paiement.
+
+Confirmez la réservation.
+
+4. Gestion et Optimisation des Réservations
+
+Suivi des réservations : Dans le portail Azure, sous "Réservations Azure".
+
+Optimisation : Suivez l'utilisation des machines réservées via Azure Cost Management.
+
+Modification et annulation : Azure permet d'échanger ou d'annuler des réservations selon vos besoins.
+
+Conclusion
+
+Réserver une machine virtuelle dans Azure permet d’optimiser les coûts et d'assurer une disponibilité des ressources. Une bonne analyse de vos besoins et un suivi régulier garantissent une utilisation efficace des réservations.

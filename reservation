@@ -50,6 +50,60 @@ Vérifiez les détails de votre réservation.
 
 Sélectionnez l'option de paiement.
 
+
+
+
+Résumé simplifié : Échanges et remboursements des réservations Azure
+
+Les réservations Azure offrent des réductions en échange d’engagements à long terme. Vous pouvez échanger ou rembourser certaines réservations sous conditions.
+
+Échanges de réservations
+
+Éligibilité : Vous pouvez échanger des réservations d’un même type (ex. : VM, SQL DB).
+
+Changement de région : Possible pour les mêmes types de services.
+
+Plan d’économies : Encourage l’achat d’engagements flexibles, limitant certains échanges.
+
+Prolongation des échanges de calcul : Les échanges de réservations pour VMs, Dedicated Host et App Service sont prolongés jusqu’à nouvel ordre.
+
+
+Remboursements
+
+Montant maximum : Limite de 50 000 USD remboursés par période de 12 mois.
+
+Pas de frais pour l’instant : Microsoft ne facture pas encore de frais de résiliation anticipée, mais cela pourrait changer.
+
+Certaines réservations non remboursables : Databricks, Azure OpenAI, Sentinel, Defender, etc.
+
+
+Conditions de paiement et traitement
+
+Contrats Entreprise : Le remboursement est crédité sous forme d’engagement financier Azure.
+
+Cartes de crédit : Le montant est reversé sur la carte utilisée pour l’achat.
+
+CSP et fournisseurs : Les clients doivent passer par leur partenaire pour les échanges/remboursements.
+
+
+Comment procéder ?
+
+1. Accédez au Portail Azure > Réservations.
+
+
+2. Sélectionnez la réservation et cliquez sur Échanger ou Retour.
+
+
+3. Choisissez une nouvelle réservation d’un montant supérieur ou égal (pour les échanges).
+
+
+4. Confirmez la transaction.
+
+
+
+Microsoft recommande d’évaluer ses besoins avant d’acheter une réservation pour éviter les limitations d’échange et de remboursement.
+
+k
 Confirmez la réservation.
 
 4. Gestion et Optimisation des Réservations

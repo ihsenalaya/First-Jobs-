@@ -1,6 +1,7 @@
 cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Subject -match "votre-domaine" }
 Export-PfxCertificate -Cert $cert -FilePath "$env:USERPROFILE\Desktop\moncertificat.pfx" -Password (ConvertTo-SecureString -String "MotDePasse" -Force -AsPlainText)
 
+$cert = New-SelfSignedCertificate -DnsName "monappgateway.local" -CertStoreLocation "Cert:\LocalMachine\My" -KeyExportPolicy Exportable -FriendlyName "Certificat App Gateway" -NotAfter (Get-Date).AddYears(1)
 
 $Password = ConvertTo-SecureString -String "MotDePasse123!" -Force -AsPlainText
 Export-PfxCertificate -Cert $cert -FilePath "$env:USERPROFILE\Desktop\monappgateway.pfx" -Password $Password

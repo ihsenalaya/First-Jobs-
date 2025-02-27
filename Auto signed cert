@@ -1,0 +1,2 @@
+cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Subject -match "votre-domaine" }
+Export-PfxCertificate -Cert $cert -FilePath "$env:USERPROFILE\Desktop\moncertificat.pfx" -Password (ConvertTo-SecureString -String "MotDePasse" -Force -AsPlainText)

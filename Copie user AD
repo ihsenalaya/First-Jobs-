@@ -11,3 +11,18 @@ if (Get-ADGroupMember -Identity $SourceGroup | Where-Object {$_.SamAccountName -
 } else {
     Write-Host "L'utilisateur n'est pas dans le groupe $SourceGroup"
 }
+
+
+# Définir les noms des groupes
+$SourceGroup = "GroupeA"  # Remplace par le nom du groupe source
+$TargetGroup = "GroupeB"  # Remplace par le nom du groupe cible
+
+# Récupérer les membres du groupe source
+$Users = Get-ADGroupMember -Identity $SourceGroup | Where-Object { $_.objectClass -eq "user" }
+
+# Ajouter chaque utilisateur au groupe cible
+$Users | ForEach-Object {
+    Add-ADGroupMember -Identity $TargetGroup -Members $_.SamAccountName
+}
+
+Write-Host "Tous les utilisateurs de $SourceGroup ont été ajoutés à $TargetGroup."

@@ -1,0 +1,13 @@
+# Définir les variables
+$UserSamAccountName = "NomUtilisateur"  # Remplace par le SamAccountName de l'utilisateur
+$SourceGroup = "GroupeSource"  # Remplace par le nom du groupe source
+$TargetGroup = "GroupeCible"  # Remplace par le nom du groupe cible
+
+# Vérifier si l'utilisateur est dans le groupe source
+if (Get-ADGroupMember -Identity $SourceGroup | Where-Object {$_.SamAccountName -eq $UserSamAccountName}) {
+    # Ajouter l'utilisateur au groupe cible
+    Add-ADGroupMember -Identity $TargetGroup -Members $UserSamAccountName
+    Write-Host "Utilisateur ajouté au groupe $TargetGroup"
+} else {
+    Write-Host "L'utilisateur n'est pas dans le groupe $SourceGroup"
+}

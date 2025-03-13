@@ -1,0 +1,25 @@
+{
+                                            "type": "Microsoft.Resources/deploymentScripts",
+                                            "apiVersion": "2023-08-01",
+                                            "name": "[format('{0}_uploadSettings', variables('storageAccountName'))]",
+                                            "kind": "AzurePowerShell",
+                                            "location": "[if(startsWith(parameters('location'), 'china'), 'chinaeast2', parameters('location'))]",
+                                            "tags": "[union(parameters('tags'), coalesce(tryGet(parameters('tagsByResource'), 'Microsoft.Resources/deploymentScripts'), createObject()))]",
+                                            "identity": {
+                                                "type": "UserAssigned",
+                                                "userAssignedIdentities": {
+                                                    "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}_blobManager', variables('storageAccountName'))))]": {}
+                                                }
+                                            },
+                                            "properties": "[union(if(parameters('enablePublicAccess'), createObject(), createObject('storageAccountSettings', createObject('storageAccountName', variables('scriptStorageAccountName')), 'containerSettings', createObject('containerGroupName', format('{0}cg', variables('scriptStorageAccountName')), 'subnetIds', createArray(createObject('id', parameters('scriptSubnetId')))))), createObject('azPowerShellVersion', '9.0', 'retentionInterval', 'PT1H', 'environmentVariables', createArray(createObject('name', 'ftkVersion', 'value', variables('$fxv#10')), createObject('name', 'scopes', 'value', join(parameters('scopesToMonitor'), '|')), createObject('name', 'msexportRetentionInDays', 'value', string(parameters('msexportRetentionInDays'))), createObject('name', 'ingestionRetentionInMonths', 'value', string(parameters('ingestionRetentionInMonths'))), createObject('name', 'rawRetentionInDays', 'value', string(parameters('rawRetentionInDays'))), createObject('name', 'finalRetentionInMonths', 'value', string(parameters('finalRetentionInMonths'))), createObject('name', 'storageAccountName', 'value', variables('storageAccountName')), createObject('name', 'containerName', 'value', 'config'), createObject('name', 'schemaFiles', 'value', string(variables('schemaFiles')))), 'scriptContent', variables('$fxv#11')))]",
+                                            "dependsOn": [
+                                                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-blob-ep', variables('storageAccountName')))]",
+                                                // "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', format('{0}-blob-ep', variables('storageAccountName')), 'storage-endpoint-zone')]",
+                                                "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers', variables('storageAccountName'), 'default', 'config')]",
+                                                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}_blobManager', variables('storageAccountName')))]",
+                                                "identityRoleAssignments",
+                                                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-blob-ep', variables('scriptStorageAccountName')))]",
+                                                // "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', format('{0}-blob-ep', variables('scriptStorageAccountName')), 'blob-endpoint-zone')]",
+                                                "[resourceId('Microsoft.Storage/storageAccounts', variables('scriptStorageAccountName'))]"
+                                            ]
+                                        }

@@ -1,0 +1,8 @@
+Get-NetFirewallRule | Where-Object {
+    ($_ | Get-NetFirewallAddressFilter).RemoteAddress -match "^10\.238\." -or
+    ($_ | Get-NetFirewallAddressFilter).LocalAddress -match "^10\.238\."
+} | Select-Object Name, DisplayName, Direction, Action, 
+    @{Name="LocalAddress";Expression={($_ | Get-NetFirewallAddressFilter).LocalAddress}}, 
+    @{Name="RemoteAddress";Expression={($_ | Get-NetFirewallAddressFilter).RemoteAddress}}, 
+    @{Name="LocalPort";Expression={($_ | Get-NetFirewallPortFilter).LocalPort}}, 
+    @{Name="RemotePort";Expression={($_ | Get-NetFirewallPortFilter).RemotePort}} | Format-Table -AutoSize

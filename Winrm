@@ -1,0 +1,33 @@
+1. Vérifier les certificats existants
+
+Exécute cette commande PowerShell pour voir les certificats disponibles :
+
+Get-ChildItem -Path Cert:\LocalMachine\My
+
+Cherche un certificat dont le CN correspond au nom d'hôte du serveur et qui a Server Authentication comme usage.
+
+2. Créer un certificat auto-signé (si aucun n'est disponible)
+
+Si tu veux tester avec un certificat auto-signé, exécute :
+
+New-SelfSignedCertificate -DnsName "nom-du-serveur" -CertStoreLocation Cert:\LocalMachine\My
+
+Remplace "nom-du-serveur" par le nom réel de la machine.
+
+3. Configurer WinRM avec le certificat
+
+Obtiens le Thumbprint du certificat :
+
+Get-ChildItem -Path Cert:\LocalMachine\My
+
+Puis configure WinRM avec ce certificat :
+
+winrm create winrm/config/Listener?Address=*+Transport=HTTPS @{CertificateThumbprint="THUMBPRINT_DU_CERTIFICAT"}
+
+Remplace "THUMBPRINT_DU_CERTIFICAT" par la valeur obtenue.
+
+4. Vérifier la configuration
+
+Exécute :
+
+winrm enumerate winrm/config/Listener

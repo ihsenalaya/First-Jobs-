@@ -1,0 +1,40 @@
+Objet : Installation d'un FinOps Hub dans le réseau Clariane
+
+Bonjour,
+
+J'espère que vous allez bien.
+
+Je souhaite installer un FinOps Hub dans le réseau Clariane afin d'optimiser les coûts et d’anticiper leurs variations. Ce hub reposera principalement sur les services suivants :
+
+Azure Data Explorer pour l'analyse des données
+
+Azure Data Factory pour l'ingestion et le transfert des données
+
+Azure Storage Account pour le stockage des données
+
+Ces services fonctionneront dans un réseau privé et communiqueront via des private endpoints.
+
+Infrastructure réseau
+Le FinOps Hub nécessitera un réseau /26, structuré en trois sous-réseaux :
+
+/28 dédié aux endpoints
+
+/28 dédié aux Azure Container Groups
+
+/27 dédié à Azure Data Explorer
+
+Accès et flux réseau
+Le hub devra être accessible depuis Power BI Desktop installé sur les postes de travail Clariane (prévoir un routage global).
+
+Aucune connexion Internet ne sera requise pour le hub.
+
+Les données traitées seront exportées via Cost Management et stockées dans l’Azure Storage Account.
+
+Le hub utilisera les Private DNS Zones centrales de l’environnement Clariane pour la résolution DNS.
+
+Des ouvertures de flux vers le compte de stockage et Azure Data Explorer seront à prévoir.
+
+Merci d’avance pour votre retour sur cette proposition.
+
+Cordialement,
+Ihsen Alaya

@@ -12,3 +12,20 @@ dynamic "delegation" {
       }
     }
   }
+delegated_subnets = [
+  {
+    name       = "subnet-aci"
+    delegation = "Microsoft.ContainerInstance/containerGroups"
+    actions    = [
+      "Microsoft.Network/virtualNetworks/subnets/join/action",
+      "Microsoft.Network/virtualNetworks/subnets/register/action"
+    ]
+  },
+  {
+    name       = "subnet-web"
+    delegation = "Microsoft.Web/serverFarms"
+    actions    = [
+      "Microsoft.Network/virtualNetworks/subnets/join/action"
+    ]
+  }
+]

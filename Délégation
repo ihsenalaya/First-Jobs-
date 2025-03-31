@@ -1,0 +1,14 @@
+dynamic "delegation" {
+    for_each = [
+      for item in var.delegated_subnets : item
+      if item.name == var.subnet_names[count.index]
+    ]
+    content {
+      name = delegation.value.delegation
+
+      service_delegation {
+        name    = delegation.value.delegation
+        actions = delegation.value.actions
+      }
+    }
+  }

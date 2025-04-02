@@ -1,32 +1,120 @@
-Pour l’installation du FinOps hub, Microsoft à Fournie une Template Azure Ressource Manager (ARM) qui permet l’installation complet de ce hub en mode privé ou public. Cette Template déploie :
-•	Un block Keyvault qui renferme un Keyvault, une private endpoint privée et une  DNS private zone dédié. 
-•	Un block Stockage qui renferme :
--	Un compte de stockage principale Data Lake Storage Gen2 pour l’ingestions des données.
--	Un compte de stockage temporaire pour le stockage temporaire des scripts nécessaire pour le deploiement.
--	Une Identité managé configuré avec les rôles nécessaires pour la gestion des données dans les comptes des stockages.
--	Des Endpoint et des DNS Private zone dédiées aux différents types des données dans les comptes de stockage.
-•	Un Block Vnet qui renferme un vnet, et un NSG.
-•	Un Block Data Explorer qui renferme :
--	Un cluster data explorer avec les bases des données nécessaires.
--	Les Private Endpoint et les DNS private zones
--	Les scripts de de configuration et de démarrage des clusters
--	Les autorisations nécessaires pour le Data Factory.
-•	Un block Data Factory
-•	Un block Data Factory Resources qui renferme :
--	Les scriptes de démarrage
--	Les configurations des pipelines des données.
--	Les configurations des managed runtime integrations.
--	Les autorisations nécessaires.
+Installation du FinOps Hub
 
-Pour l’installation de FinOps Hub dans l’environnement Clariane, des travaux d’adaptation du Template original ont été réalisés ; le bloc vnet, le compte de stockage principal, l’identité managée, le NSG, le keyvault et les DNS primate zones des différents composants  ont été extraites du Template original, puis  automatisés avec Terraforme et adaptés à être déployer en privés et suivant les standards de l’environnement Clariane. 
-L’installation du FinOps Hub dans l’environnement Clariane se fait sur 3 étapes :
--	1ere étape Déploiement de l’infrastructure avec Terragrunt :  Pendant cette étape on déploie le vnet et les 3 subnets nécessaires, le NSG, la table de routage, le peering avec le hub, les Private DNS Zone dédiés avec les Records nécessaires.
--	2éme étape Déploiement du Template ARM à l’aide l’éditeur « Déployer un modèle personnalisé » : pendant cette phase il faut copier le contenue de la Template ARM dans l’éditeur et enregistrer.
-Des cases à remplir s’affiche, il faux fournir les données depuis l’infrastructure déjà installer avec Terragrunt, et puis valider.
+Microsoft fournit un modèle Azure Resource Manager (ARM) permettant l’installation complète du FinOps Hub, en mode privé ou public. Ce modèle déploie plusieurs blocs de ressources :
 
-NB 
-il faut s’assurer que :
--	Les différentes Private Endpoint sont bien enregistrés dans les DNS Private Zone dédiés avant le demarrage de deploiement du template ARM.
--	Les ID fournis pendant le déploiement du template sont bien des resource ID (de la forme /subscriptions/dccaa45e-c71a-47f1-965e-1af80f501c3c/resourceGroups…).
--	3eme étape : vérification de bon déploiement du hub : a la fin de l’installation il faux vérifier la présence de 10 pipelines dans le studio Azure Data Factory, le bon fonctionnement du pipeline config_StartExportProcess, du « Integration Runtime » et des connections aux autres services du Hub.
+1. Bloc Key Vault
 
+Un coffre de clés Azure Key Vault
+
+Un endpoint privé associé
+
+Une zone DNS privée dédiée
+
+
+2. Bloc Stockage
+
+Un compte de stockage principal Data Lake Storage Gen2 pour l’ingestion des données
+
+Un compte de stockage temporaire pour héberger les scripts nécessaires au déploiement
+
+Une identité managée configurée avec les rôles requis pour la gestion des données dans les comptes de stockage
+
+Des endpoints privés et des zones DNS privées dédiés aux différents types de données
+
+
+3. Bloc Réseau (VNet)
+
+Un réseau virtuel (VNet)
+
+Un groupe de sécurité réseau (NSG)
+
+
+4. Bloc Azure Data Explorer
+
+Un cluster Data Explorer avec les bases de données nécessaires
+
+Des endpoints privés et des zones DNS privées
+
+Des scripts de configuration et de démarrage du cluster
+
+Les autorisations nécessaires pour l’intégration avec Azure Data Factory
+
+
+5. Bloc Azure Data Factory
+
+6. Bloc Ressources Azure Data Factory
+
+Scripts de démarrage
+
+Configuration des pipelines de données
+
+Configuration des runtimes managés
+
+Autorisations nécessaires
+
+
+
+---
+
+Déploiement dans l’environnement Clariane
+
+Pour l’installation dans l’environnement Clariane, le modèle ARM d’origine a été adapté. Les composants suivants ont été extraits du modèle original, automatisés avec Terraform via Terragrunt, et adaptés au contexte privé et aux standards Clariane :
+
+VNet
+
+Compte de stockage principal
+
+Identité managée
+
+NSG
+
+Key Vault
+
+Zones DNS privées des différents composants
+
+
+Étapes d'installation
+
+1. Déploiement de l’infrastructure (via Terragrunt)
+
+Déploiement des éléments suivants :
+
+VNet et 3 sous-réseaux nécessaires
+
+NSG
+
+Table de routage
+
+Peering avec le hub réseau
+
+Zones DNS privées avec les enregistrements correspondants
+
+
+2. Déploiement du modèle ARM (via l’éditeur "Déployer un modèle personnalisé")
+
+Copier le contenu du modèle ARM dans l’éditeur
+
+Remplir les champs requis avec les informations issues de l’infrastructure déployée (via Terragrunt)
+
+Vérifier et valider le déploiement
+
+
+Remarques importantes :
+
+Les endpoints privés doivent être correctement enregistrés dans leurs zones DNS privées avant de lancer le déploiement ARM
+
+Les identifiants fournis doivent être des Resource IDs complets (au format :
+/subscriptions/{id}/resourceGroups/{rg}/providers/...)
+
+
+3. Vérification du bon déploiement
+
+À l’issue du déploiement, il convient de vérifier :
+
+La présence de 10 pipelines dans Azure Data Factory Studio
+
+Le bon fonctionnement du pipeline config_StartExportProcess
+
+Le fonctionnement de l'Integration Runtime
+
+Les connexions aux autres services du Hub

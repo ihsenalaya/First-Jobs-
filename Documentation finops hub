@@ -22,3 +22,11 @@ Pour l’installation de FinOps Hub dans l’environnement Clariane, des travaux
 L’installation du FinOps Hub dans l’environnement Clariane se fait sur 3 étapes :
 -	1ere étape Déploiement de l’infrastructure avec Terragrunt :  Pendant cette étape on déploie le vnet et les 3 subnets nécessaires, le NSG, la table de routage, le peering avec le hub, les Private DNS Zone dédiés avec les Records nécessaires.
 -	2éme étape Déploiement du Template ARM à l’aide l’éditeur « Déployer un modèle personnalisé » : pendant cette phase il faut copier le contenue de la Template ARM dans l’éditeur et enregistrer.
+Des cases à remplir s’affiche, il faux fournir les données depuis l’infrastructure déjà installer avec Terragrunt, et puis valider.
+
+NB 
+il faut s’assurer que :
+-	Les différentes Private Endpoint sont bien enregistrés dans les DNS Private Zone dédiés avant le demarrage de deploiement du template ARM.
+-	Les ID fournis pendant le déploiement du template sont bien des resource ID (de la forme /subscriptions/dccaa45e-c71a-47f1-965e-1af80f501c3c/resourceGroups…).
+-	3eme étape : vérification de bon déploiement du hub : a la fin de l’installation il faux vérifier la présence de 10 pipelines dans le studio Azure Data Factory, le bon fonctionnement du pipeline config_StartExportProcess, du « Integration Runtime » et des connections aux autres services du Hub.
+

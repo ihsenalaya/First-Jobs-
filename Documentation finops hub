@@ -1,0 +1,24 @@
+Pour l’installation du FinOps hub, Microsoft à Fournie une Template Azure Ressource Manager (ARM) qui permet l’installation complet de ce hub en mode privé ou public. Cette Template déploie :
+•	Un block Keyvault qui renferme un Keyvault, une private endpoint privée et une  DNS private zone dédié. 
+•	Un block Stockage qui renferme :
+-	Un compte de stockage principale Data Lake Storage Gen2 pour l’ingestions des données.
+-	Un compte de stockage temporaire pour le stockage temporaire des scripts nécessaire pour le deploiement.
+-	Une Identité managé configuré avec les rôles nécessaires pour la gestion des données dans les comptes des stockages.
+-	Des Endpoint et des DNS Private zone dédiées aux différents types des données dans les comptes de stockage.
+•	Un Block Vnet qui renferme un vnet, et un NSG.
+•	Un Block Data Explorer qui renferme :
+-	Un cluster data explorer avec les bases des données nécessaires.
+-	Les Private Endpoint et les DNS private zones
+-	Les scripts de de configuration et de démarrage des clusters
+-	Les autorisations nécessaires pour le Data Factory.
+•	Un block Data Factory
+•	Un block Data Factory Resources qui renferme :
+-	Les scriptes de démarrage
+-	Les configurations des pipelines des données.
+-	Les configurations des managed runtime integrations.
+-	Les autorisations nécessaires.
+
+Pour l’installation de FinOps Hub dans l’environnement Clariane, des travaux d’adaptation du Template original ont été réalisés ; le bloc vnet, le compte de stockage principal, l’identité managée, le NSG, le keyvault et les DNS primate zones des différents composants  ont été extraites du Template original, puis  automatisés avec Terraforme et adaptés à être déployer en privés et suivant les standards de l’environnement Clariane. 
+L’installation du FinOps Hub dans l’environnement Clariane se fait sur 3 étapes :
+-	1ere étape Déploiement de l’infrastructure avec Terragrunt :  Pendant cette étape on déploie le vnet et les 3 subnets nécessaires, le NSG, la table de routage, le peering avec le hub, les Private DNS Zone dédiés avec les Records nécessaires.
+-	2éme étape Déploiement du Template ARM à l’aide l’éditeur « Déployer un modèle personnalisé » : pendant cette phase il faut copier le contenue de la Template ARM dans l’éditeur et enregistrer.

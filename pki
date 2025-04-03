@@ -1,14 +1,14 @@
 #CONSTANTE
 $currentDir = Split-Path $MyInvocation.MyCommand.Path -Parent
-$KeyPassProfileName = "Korian FR"
-$KeyPassPFXFilePath = "Korian/General/A TRIER"
+$KeyPassProfileName = "Entreprise FR"
+$KeyPassPFXFilePath = "Entreprise/General/A TRIER"
 $TenantId = "81d2d503-5071-4079-a2da-0f9fbd123f54"
 
 #VARIABLE
 $CertWorkingDir = $currentDir + "\Certs\DEPOSEZ ICI"
 $OpenSSLPath = $currentDir + "\openssl\openssl.exe"
 $pfxFolder = $(Split-Path $currentDir -Parent)
-$KeyPassDB = $pfxFolder + "\Korian FR - SPs.kdbx"
+$KeyPassDB = $pfxFolder + "\ENTREPRISE FR - SPs.kdbx"
 
 #$KeePassMasterKey = ConvertTo-SecureString -String "xxxxx" -AsPlainText -Force
 

@@ -1,448 +1,218 @@
-#CONSTANTE
-$currentDir = Split-Path $MyInvocation.MyCommand.Path -Parent
-$KeyPassProfileName = "Entreprise FR"
-$KeyPassPFXFilePath = "Entreprise/General/A TRIER"
-$TenantId = ""
+# -------------------------------------------
+# VARIABLES
+# -------------------------------------------
+$currentDir      = Split-Path $MyInvocation.MyCommand.Path -Parent
+$CertWorkingDir  = $currentDir + "\Certs\DEPOSEZ ICI"
+$OpenSSLPath     = $currentDir + "\openssl\openssl.exe"
 
-#VARIABLE
-$CertWorkingDir = $currentDir + "\Certs\DEPOSEZ ICI"
-$OpenSSLPath = $currentDir + "\openssl\openssl.exe"
-$pfxFolder = $(Split-Path $currentDir -Parent)
-$KeyPassDB = $pfxFolder + "\ENTREPRISE FR - SPs.kdbx"
+# -------------------------------------------
+# FONCTIONS
+# -------------------------------------------
 
-#$KeePassMasterKey = ConvertTo-SecureString -String "xxxxx" -AsPlainText -Force
-
-#FUNCTIONS
-
-function testUserGroup($username,$group){
-    $members = (New-Object System.DirectoryServices.DirectorySearcher("(&(objectCategory=User)(samAccountName=$($username)))")).FindOne().GetDirectoryEntry().memberOf
-    If ($members | where-object {$_ -like "*$group*"}) {
-        return $true
-    }
-    return $false
-}
-
-function testModule($nom){
-    if (Get-Module -ListAvailable -Name $nom) {
-        Import-Module $nom
-    } 
-    else {
-        Install-Module -Name $nom -Force > $null
-    }
-}
-
-function login {
-    $context = Get-AzContext
-	
-    if (!$context)
-		{
-        Connect-AzAccount -TenantId $TenantId | Out-Null
-		# Set-AzContext "xxx" -TenantId $TenantId
-        return $false 
-		}
-
-    $token = Get-AzAccessToken
-	
-    if(!$token)
-		{
-        Clear-AzContext -Force | Out-Null
-        return $false
-		}
-
-    if ($null -eq [Microsoft.Open.Azure.AD.CommonLibrary.AzureSession]::AccessTokens)
-		{
-        Connect-AzureAD -TenantId $TenantId
-        return $false
-		}
-    
-    return $true
-}
-
-function promptBool($question){
+# Fonction booléenne pour interaction utilisateur (Yes / No)
+function promptBool($question) {
     $type = Read-Host -Prompt $question
     $type = $type.ToLower()
-    if( ($type -eq "y") -or ($type -eq "o") ){
+    if ( ($type -eq "y") -or ($type -eq "o") ) {
         return $true
     }
-    elseif($type -eq "n"){
+    elseif ($type -eq "n") {
         return $false
     }
-    else{
+    else {
         return promptBool($question)
     }
- }
+}
 
-function promptType{
+# Fonction de saisie pour déterminer le type de certificat
+function promptType {
     $type = Read-Host -Prompt "1- Cert Client+Server / 2- Cert Server"
-    if($type -eq "1"){
+    if ($type -eq "1") {
         return "1"
     }
-    elseif($type -eq "2"){
+    elseif ($type -eq "2") {
         return "2"
     }
-    else{
+    else {
         return promptType
     }
 }
 
-function genereCfg($type){
-    
-    if($type -eq "1"){
-        return  "[ req ]
-default_bits = 4096
-default_keyfile = rui.key
+# Génération du fichier de configuration pour OpenSSL, selon le type choisi
+function genereCfg($type) {
+    if ($type -eq "1") {
+        return  @"
+[ req ]
+default_bits       = 4096
+default_keyfile    = rui.key
 distinguished_name = req_distinguished_name
-encrypt_key = no
-prompt = no
-string_mask = nombstr
-req_extensions = v3_req
+encrypt_key        = no
+prompt             = no
+string_mask        = nombstr
+req_extensions     = v3_req
 
 [ v3_req ]
 basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment, dataEncipherment 
-
+keyUsage         = digitalSignature, keyEncipherment, dataEncipherment 
 extendedKeyUsage = serverAuth, clientAuth
 
 [ req_distinguished_name ] 
-countryName = FR
-stateOrProvinceName = Rhone-Alpes
-localityName = Lyon
-0.organizationName = Korian
-organizationalUnitName = DSI"
+countryName            = FR
+stateOrProvinceName    = Rhone-Alpes
+localityName           = Lyon
+0.organizationName     = ENTREPRISE
+organizationalUnitName = DSI
+"@
     }
-    elseif($type -eq "2"){
-        return "oid_section = OIDs
+    elseif ($type -eq "2") {
+        return @"
+oid_section = OIDs
 
 [ OIDs ]
 certificateTemplateName = 1.3.6.1.4.1.311.20.2
 
-[ req ] 
-default_bits = 4096
-default_keyfile = rui.key
+[ req ]
+default_bits       = 4096
+default_keyfile    = rui.key
 distinguished_name = req_distinguished_name
-encrypt_key = no
-prompt = no
-string_mask = nombstr
-req_extensions = req_ext
+encrypt_key        = no
+prompt             = no
+string_mask        = nombstr
+req_extensions     = req_ext
 
 [ req_ext ]
-basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment, dataEncipherment 
-certificateTemplateName = ASN1:PRINTABLESTRING:Korian-AzureServicePrincipal
+basicConstraints     = CA:FALSE
+keyUsage             = digitalSignature, keyEncipherment, dataEncipherment 
+certificateTemplateName = ASN1:PRINTABLESTRING:ENTREPRISE-AzureServicePrincipal
 
 [ req_distinguished_name ] 
-countryName = FR
-stateOrProvinceName = Rhone-Alpes
-localityName = Lyon
-0.organizationName = Korian
-organizationalUnitName = DSI"
+countryName            = FR
+stateOrProvinceName    = Rhone-Alpes
+localityName           = Lyon
+0.organizationName     = ENTREPRISE
+organizationalUnitName = DSI
+"@
     }
-    else{
+    else {
+        # Relance la saisie si erreur
         return genereCfg(promptType)
     }
-
-    
-    return $cfg
 }
 
-function getTemplate($type){
-    if($type -eq "1"){
-        return "Korian-AzureServicePrincipalWithClientAuth"
+# Choix du template PKI (si vous utilisez un template particulier côté ADCS)
+function getTemplate($type) {
+    if ($type -eq "1") {
+        return "ENTREPRISE-AzureServicePrincipalWithClientAuth"
     }
-    elseif($type -eq "2"){
-        return "Korian-AzureServicePrincipal"
+    elseif ($type -eq "2") {
+        return "ENTREPRISE-AzureServicePrincipal"
     }
-    else{
+    else {
         return getTemplate(promptType)
     }
 }
 
-function getKeypassEntry($nom){
+# -------------------------------------------
+# SCRIPT PRINCIPAL
+# -------------------------------------------
+try {
+    Write-Host -ForegroundColor Green "**** Début du script (Extrait) ****"
 
-    if($nom -ne ""){
-        #$entry = Get-KeePassEntry -KeePassEntryGroupPath $KeyPassPFXFilePath -Title $nom -DatabaseProfileName $KeyPassProfileName -MasterKey $KeePassMasterKey -AsPlainText
-        $entry = Get-KeePassEntry -Title $nom -DatabaseProfileName $KeyPassProfileName -MasterKey $KeePassMasterKey -AsPlainText
+    # Parcourt chaque sous-dossier dans "Certs\DEPOSEZ ICI"
+    ForEach ($Dir In (Get-ChildItem -Path $CertWorkingDir -Directory)) {
         
-        if(!$entry){
-            Write-Host -ForegroundColor Yellow "**** Génération password ****"
-            $NewPassword = New-KeePassPassword -SpecialCharacters -Minus -UnderScore -Brackets -UpperCase -LowerCase -Digits -Length 32 -ExcludeCharacters '"'
-            New-KeePassEntry -DatabaseProfileName $KeyPassProfileName -Title $nom -UserName $nom -KeePassPassword $NewPassword -KeePassEntryGroupPath $KeyPassPFXFilePath -MasterKey $KeePassMasterKey
-            return getKeypassEntry($nom)
-        }
-        else{
-            Write-Host -ForegroundColor Green "**** Password OK ****"
-            return $entry
-        }  
-    }
-    else{
-        return ""
-    }
-
-}
-
-# Fonction pour normaliser les espaces
-function NormalizeSpaces {
-    param (
-        [string]$inputString
-    )
-    return $inputString -replace '[\s\u00A0]+', ''  # Remplace tous les espaces et espaces insécables
-}
-
-function getSP($nom,$Cert)
-	{
-    if ($nom -ne "")
-		{
-		# Old commande "Get-Azure..."
-        #$ServicePrincipal = Get-AzureADServicePrincipal -SearchString "$nom"
-		# Via cette commande il y a un soucis pour trouver et utiliser les SPN ayant 2 espaces consécutif
-		#$ServicePrincipal = Get-AzADServicePrincipal -DisplayNameBeginsWith "$nom"
-
-		# Récupérer tous les Service Principals
-		$allSPNs = Get-AzADServicePrincipal
-
-		if ($allSPNs)
-			{
-			# Formatter les SPNs existants en minuscules et retirer les espaces
-			$formattedSPNs = $allSPNs | ForEach-Object { 
-				[PSCustomObject]@{
-					Original = $_
-					Formatted = NormalizeSpaces($_.DisplayName.ToLower())
-					}
-				}
-
-			# Formatter le SPN cible
-			$formattedTargetSPN = NormalizeSpaces($nom.ToLower())
-
-			# Comparer et vérifier si le SPN existe, si oui récupérer ses valeurs
-			$matchingSPN = $formattedSPNs | Where-Object { $_.Formatted -eq $formattedTargetSPN }
-
-			if ($matchingSPN) { $ServicePrincipal = $matchingSPN.Original }
-			}
-
-        $KeyValue = [System.Convert]::ToBase64String($Cert.GetRawCertData())
-
-		if (!$ServicePrincipal)
-			{
-			Write-Host -ForegroundColor Yellow "**** Génération du service principal $nom ****"
-
-			$reponse = Read-Host "Le SPN n'a pas été trouvé, validez-vous la création d'un nouveau SPN ? (o/n)"
-			#Write-Host "DisplayName : " $nom
-			#Write-Host "CertValue : " $KeyValue
-			#Write-Host "EndDate : " $Cert.NotAfter
-			#Write-Host "StartDate : " $Cert.NotBefore
-
-			if ($reponse -eq "oui" -or $reponse -eq "o" -or $reponse -eq "yes" -or $reponse -eq "y")
-				{
-				New-AzADServicePrincipal -DisplayName $nom -CertValue $KeyValue -EndDate $Cert.NotAfter -StartDate $Cert.NotBefore
-				# La fonction est de nouveau appelé suite à la création du SPN pour s'assurer que la création est ok
-				return getSP "$nom" $Cert
-				}
-			else
-				{
-				return ""
-				}
-			}
-        else
-			{
-		    $objId = Get-AzADApplication -ApplicationId $ServicePrincipal.AppId
-	        $AppCredentials = Get-AzADAppCredential -ObjectId $objId.Id
-
-            $present = $false
-            foreach($app in $AppCredentials)
-				{
-                if($app.CustomKeyIdentifier)
-					{
-                    $thumb = $([System.Convert]::ToBase64String($app.CustomKeyIdentifier))
-                    if($thumb -eq $Cert.Thumbprint)
-						{
-                        Write-Host -ForegroundColor Yellow "**** Le certificat  $($Cert.Thumbprint) est déjà présent ****"
-                        $present = $true
-						}
-					}
-				}
-        
-			if ($present -eq $false)
-				{
-				Write-Host -ForegroundColor Yellow "**** Ajout du certificat  $($Cert.Thumbprint) ****"
-				New-AzADAppCredential -ObjectId $objId.Id -CertValue $KeyValue -EndDate $Cert.NotAfter -StartDate $Cert.NotBefore | Out-Null
-				}
-
-            Write-Host -ForegroundColor Yellow "App ID : $($objId.AppId)"
-            Write-Host -ForegroundColor Green "**** Service princpal $nom OK ****"
-            return $ServicePrincipal
-			}
-		}
-    else
-		{
-        return ""
-		}
-	}
-
-function checkKeyPass(){
-
-    If(!$(Get-KeePassDatabaseConfiguration -DatabaseProfileName $KeyPassProfileName))
-    {
-        New-KeePassDatabaseConfiguration -DatabaseProfileName $KeyPassProfileName -DatabasePath $KeyPassDB -UseMasterKey
-        return $false
-    }
-    $global:KeePassMasterKey = Read-Host -Prompt "Enter passphrase" -AsSecureString
-    $entry = Get-KeePassEntry -Title "TF SP - OTH - Korall Billing - 00" -DatabaseProfileName $KeyPassProfileName -MasterKey $KeePassMasterKey -AsPlainText
-    if(!$entry){
-        return $false
-    }
-    #if(New-KPConnection -MasterKey $KeePassMasterKey){
-
-    #}
-    
-
-    return $true
-
-}
-
-#MAIN
-
-try{
-
-    Write-Host -ForegroundColor Green "**** Début du script ****"
-
-    testModule("PoShKeePass")
-    testModule("AzureAD")
-    testModule("Microsoft.PowerShell.Security")
-    
-	$group = "G_PKI_Adm"
-    $testGroup = testUserGroup $Env:UserName "G_PKI_Adm"
-    if(!$testGroup){
-        Write-Host -ForegroundColor Yellow "**** Vous n'appartenez pas au groupe $group, vous ne pourrez pas générer de certificat via la pki ****"
-        exit
-    }
-
-    Write-Host -ForegroundColor Yellow "**** Connexion à Azure ****"
-    $connect = $false
-    while(!$connect){
-        $connect = login
-    }
-    Write-Host -ForegroundColor Green "**** Connecté à Azure ****"
-
-    Write-Host -ForegroundColor Yellow "**** Chargement du keepass ****"
-    
-    #Remove-KeePassDatabaseConfiguration -DatabaseProfileName $KeyPassProfileName
-    $checkKeyPass = $false
-    while(!$checkKeyPass){
-        $checkKeyPass = checkKeyPass
-    }
-    Write-Host -ForegroundColor Green "**** Keypass OK ****"
-
-
-    ForEach ($Dir In $(Get-ChildItem -Path $CertWorkingDir -Directory)){
-    
-        Write-Host -ForegroundColor Red "**** Début $($Dir.Name) ****"
-
+        Write-Host -ForegroundColor Cyan "---- Début pour le dossier: $($Dir.Name) ----"
         $name = $Dir.Name
         
+        # On se place dans le dossier
         Set-Location -Path $Dir.FullName
 
-        $type = $null
-        $cfg= $null
-
-        #GENERATION CFG
+        # Vérifier si on doit régénérer le fichier de config OpenSSL
         $generateCfg = $true
-        if( Test-Path "csr_openssl.cfg" ){
-            Write-Host -ForegroundColor Yellow "**** Le fichier csr_openssl.cfg existe ****"
-            $generateCfg = promptBool("Le fichier csr_openssl.cfg existe, voulez-vous le regenerer Y- Oui / N- Non")
+        if (Test-Path "csr_openssl.cfg") {
+            Write-Host -ForegroundColor Yellow "Le fichier csr_openssl.cfg existe déjà."
+            $generateCfg = promptBool("Voulez-vous le régénérer ? [y/n]")
         }
 
-        if($generateCfg){
-            Write-Host -ForegroundColor Yellow "**** Creation cfg ****"
-            Remove-Item "$($Dir.Name).csr","$($Dir.Name).cer","$($Dir.Name).pfx", "$($Dir.Name).key" -Force -ErrorAction SilentlyContinue
-            $type = promptType
-            $cfg = genereCfg($type)
-            $cfg = $cfg + "
-CN="+$name
-            $cfg | out-file -FilePath "csr_openssl.cfg"  -Force -Encoding ascii
+        # Génération du contenu de configuration
+        if ($generateCfg) {
+            Remove-Item "$($Dir.Name).csr", "$($Dir.Name).cer", "$($Dir.Name).pfx", "$($Dir.Name).key" -Force -ErrorAction SilentlyContinue
             
+            $type = promptType
+            $cfg  = genereCfg($type)
+            $cfg  = $cfg + "`r`nCN=" + $name  # On ajoute le CN en fin de fichier
+
+            $cfg | Out-File -FilePath "csr_openssl.cfg" -Force -Encoding ascii
+            Write-Host -ForegroundColor Green "Fichier csr_openssl.cfg généré."
         }
 
-        #GENERATION CSR
+        # Génération (ou régénération) du CSR
         $generateCsr = $true
-        if( Test-Path "$($Dir.Name).csr" ){
-            Write-Host -ForegroundColor Yellow "**** Le fichier $($Dir.Name).csr existe ****"
-            $generateCsr = promptBool("Le fichier $($Dir.Name).csr, voulez-vous le regenerer Y- Oui / N- Non") 
+        if (Test-Path "$($Dir.Name).csr") {
+            Write-Host -ForegroundColor Yellow "Le fichier $($Dir.Name).csr existe déjà."
+            $generateCsr = promptBool("Voulez-vous le régénérer ? [y/n]")
         }
 
-        if($generateCsr){
-            Remove-Item "$($Dir.Name).csr","$($Dir.Name).cer","$($Dir.Name).pfx", "$($Dir.Name).key" -Force -ErrorAction SilentlyContinue
-            Start-Process -FilePath $OpenSSLPath -ArgumentList "req -new -nodes -out rui.csr -keyout rui.key -config csr_openssl.cfg"  -Wait  -ErrorAction Stop
+        if ($generateCsr) {
+            # On supprime d'éventuels fichiers existants pour repartir de zéro
+            Remove-Item "$($Dir.Name).csr", "$($Dir.Name).cer", "$($Dir.Name).pfx", "$($Dir.Name).key" -Force -ErrorAction SilentlyContinue
+            
+            Start-Process -FilePath $OpenSSLPath `
+                          -ArgumentList "req -new -nodes -out rui.csr -keyout rui.key -config csr_openssl.cfg" `
+                          -Wait -ErrorAction Stop
+
             Move-Item rui.csr "$($Dir.Name).csr" -Force
             Move-Item rui.key "$($Dir.Name).key" -Force
+            Write-Host -ForegroundColor Green "CSR ($($Dir.Name).csr) et clé privée ($($Dir.Name).key) générés."
         }
 
-        #GENERATION CER
+        # Génération (ou régénération) du certificat signé (PKI locale via certreq)
         $generateCer = $true
-        if( Test-Path "$($Dir.Name).cer" ){
-            $cer = Get-Item -Path "$($Dir.Name).cer"
-            $Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($cer)
-            
-            if( $Cert.NotAfter -lt (Get-Date)  ){
-                $generateCer = promptBool("Le fichier certificat est présent et périmé, voulez-vous le regenerer via la pki Y- Oui / N- Non")
+        if (Test-Path "$($Dir.Name).cer") {
+            $certFile = Get-Item -Path "$($Dir.Name).cer"
+            $certObj  = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certFile)
+
+            if ($certObj.NotAfter -lt (Get-Date)) {
+                $generateCer = promptBool("Certificat présent, mais expiré. Le régénérer via la PKI ? [y/n]")
             }
-            else{
-                $generateCer = promptBool("Le fichier certificat est présent mais encore valide, voulez-vous quand même le regenerer via la pki Y- Oui / N- Non")    
+            else {
+                $generateCer = promptBool("Certificat présent et valide. Le régénérer quand même ? [y/n]")
             }
         }
 
-        if($generateCer){
-            Remove-Item "$($Dir.Name).pfx" -ErrorAction SilentlyContinue
-            Write-Host -ForegroundColor Yellow "**** Creation cer ****"
-            Move-Item  "$($Dir.Name).csr" rui.csr -Force
-            Start-process certreq -ArgumentList "-submit -attrib CertificateTemplate:$(getTemplate($type)) rui.csr rui.cer" -Wait -ErrorAction Stop
+        if ($generateCer) {
+            Write-Host -ForegroundColor Yellow "Demande de certificat via certreq..."
+            Move-Item "$($Dir.Name).csr" rui.csr -Force
+
+            certreq -submit -attrib "CertificateTemplate:$(getTemplate($type))" rui.csr rui.cer
+            
             Move-Item rui.cer "$($Dir.Name).cer" -Force
             Move-Item rui.csr "$($Dir.Name).csr" -Force
-            Remove-item rui.rsp -Force
+            Remove-Item rui.rsp -Force -ErrorAction SilentlyContinue
+
+            Write-Host -ForegroundColor Green "Certificat signé ($($Dir.Name).cer) récupéré."
         }
 
-        #GET KEYPASS PASSWORD
-        Write-Host -ForegroundColor Yellow "**** Récupération password pour $name ****"
-        $mdp = getKeypassEntry($name)
-        Write-Host -ForegroundColor Green "**** Password pour $name : $($mdp.Password)"
-        
-        #GENERATION PFX
-        $generatePfx = $true
-        if( Test-Path "$($Dir.Name).pfx" ){
-           $generatePfx = promptBool("Le fichier pfx est présent, voulez-vous le regenerer Y- Oui / N- Non") 
-        }
-        if($generatePfx){
-        
-            $Args = 'pkcs12 -export -inkey "' + $name + '.key" -in "' + $name + '.cer" -out "' + $name + '.pfx" -password pass:' + $mdp.Password
-            Start-Process -FilePath $OpenSSLPath -ArgumentList $Args -Wait
+        # -- (Optionnel) Génération du .pfx en local, si besoin --
+        #   Décommentez si vous voulez toujours créer un .pfx
+        #   Note : Ici il n'y a pas de récupération de mot de passe depuis KeePass
+        #   Vous pouvez remplacer "PASSWORD_Ici" par un prompt utilisateur, etc.
+        #
+        # $generatePfx = promptBool("Voulez-vous générer le .pfx local ? [y/n]")
+        # if ($generatePfx) {
+        #     $password = "PASSWORD_Ici"  # ou Read-Host -Prompt "Entrer mot de passe" -AsSecureString ...
+        #     $argPfx = 'pkcs12 -export -inkey "' + $name + '.key" -in "' + $name + '.cer" -out "' + $name + '.pfx" -password pass:' + $password
+        #     Start-Process -FilePath $OpenSSLPath -ArgumentList $argPfx -Wait
+        #     Write-Host -ForegroundColor Green ".pfx généré : $($name).pfx"
+        # }
 
-        }
-
-        
-        #GET SPN
-        $cer = Get-Item -Path "$($Dir.Name).cer"
-        $Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($cer)
-
-        Write-Host -ForegroundColor Yellow "**** Récupération du service principal $name ****"
-        $sp = getSP $name $Cert
-
-        #COPIE DU PFX
-        Copy-Item "$($name).pfx" $pfxFolder
-
-        #DEPLACEMENT DU DOSSIER
-        $move = promptBool("Voulez-vous déplacer le dossier $name : Y- Oui / N- Non")
-        if($move){
-            $parent =  $(Split-Path $Dir.FullName -Parent)
-            Set-Location -Path $parent
-            Move-Item -Path "$($parent)\$($name)" -Destination "$currentDir\Certs\LISTE COMPLETE"
-        }
-
-        Write-Host -ForegroundColor Red "**** Fin $name ****"
-
+        # Fin du traitement du dossier
+        Write-Host -ForegroundColor Cyan "---- Fin pour le dossier: $($Dir.Name) ----"
     }
-    Write-Host -ForegroundColor Red "**** Fin script ****"
-    Set-Location -Path $currentDir
+
+    Write-Host -ForegroundColor Magenta "**** Fin du script (Extrait) ****"
 }
-catch{
+catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
     Set-Location -Path $currentDir
 }

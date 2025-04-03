@@ -2,7 +2,7 @@
 $currentDir = Split-Path $MyInvocation.MyCommand.Path -Parent
 $KeyPassProfileName = "Entreprise FR"
 $KeyPassPFXFilePath = "Entreprise/General/A TRIER"
-$TenantId = "81d2d503-5071-4079-a2da-0f9fbd123f54"
+$TenantId = ""
 
 #VARIABLE
 $CertWorkingDir = $currentDir + "\Certs\DEPOSEZ ICI"

@@ -107,3 +107,15 @@ AzureDiagnostics
 | where Direction_s == "O"  // O pour Outbound
 | where Action_s == "D"     // D pour Deny
 | project TimeGenerated, SourceIP_s, DestinationIP_s, DestinationPort_d, Protocol_s, FlowState_s
+
+
+let currentMonth = startofmonth(now());
+let previousMonth = startofmonth(currentMonth - 1d);
+Usage
+| where TimeGenerated >= previousMonth and TimeGenerated < currentMonth + 1mo
+| extend Month = iff(TimeGenerated < currentMonth, "Previous", "Current")
+| summarize Cost = sum(PreTaxCost) by MeterCategory, Month
+| evaluate pivot(Month, sum(Cost))
+| extend Growth = (Current - Previous) / Previous * 100
+| where Growth > 5
+| project MeterCategory, PreviousCost = Previous, CurrentCost = Current, GrowthPercent = round(Growth, 2)

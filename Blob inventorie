@@ -49,17 +49,64 @@
 
 
 
-SELECT
-    TOP 100 *
-FROM
-    OPENROWSET(
+WITH AzureBlobInventory AS (
+    SELECT *
+    FROM OPENROWSET(
         BULK 'https://finopshubooue77l2dj24c.dfs.core.windows.net/ingestion/2025/04/09/12-11-12/2nd rule/2nd rule_1000000_0.csv',
         FORMAT = 'CSV',
-        PARSER_VERSION = '2.0'
-    ) AS [result]
-
--- Requête de détection d'opportunités d'optimisation de stockage
-SELECT 
+        FIRSTROW = 2,  -- Ignore la ligne d'en-tête si présente
+        PARSER_VERSION = '2.0'
+    )
+    WITH (
+         Name                  VARCHAR(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Creation-Time]       DATETIME,
+         [Last-Modified]       DATETIME,
+         Etag                  VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-Length]      BIGINT,
+         [Content-Type]        VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-Encoding]    VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-Language]    VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-CRC64]       VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-MD5]         VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Cache-Control]       VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Content-Disposition] VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         BlobType              VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         AccessTier            VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         AccessTierChangeTime  DATETIME,
+         AccessTierInferred    VARCHAR(5)   COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Expiry-Time]         DATETIME,
+         hdi_isfolder          BIT,
+         Owner                 VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Group]               VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Permissions           VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Acl                   VARCHAR(200) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Snapshot              VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Metadata              VARCHAR(200) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LastAccessTime        DATETIME,
+         LeaseStatus           VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LeaseState            VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LeaseDuration         VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         ServerEncrypted       VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CustomerProvidedKeySha256 VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         RehydratePriority     VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         ArchiveStatus         VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         EncryptionScope       VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CopyId                VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CopyStatus            VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CopySource            VARCHAR(200) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CopyProgress          VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         CopyCompletionTime    DATETIME,
+         CopyStatusDescription VARCHAR(200) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         ImmutabilityPolicyUntilDate DATETIME,
+         ImmutabilityPolicyMode VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LegalHold             VARCHAR(10)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         DeletionId            VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Deleted               BIT,
+         DeletedTime           DATETIME,
+         RemainingRetentionDays INT
+    )
+)
+SELECT TOP 100
     [Name],
     [Content-Length],
     [AccessTier],
@@ -67,22 +114,11 @@ SELECT
     [Last-Modified],
     [LastAccessTime],
     CASE 
-        -- Si le blob est en tiers Hot ou Cool et n'a pas été accédé depuis plus de 6 mois,
-        -- il pourrait être éligible pour un déplacement vers le tiers Archive
-        WHEN [AccessTier] IN ('Hot','Cool') AND [LastAccessTime] < DATEADD(month, -6, GETDATE())
-             THEN 'Migrer vers Archive'
-             
-        -- Si le blob est très volumineux (par exemple > 100MB) et n'a pas été accédé depuis plus de 3 mois,
-        -- il est recommandé de revoir la politique de stockage (migration ou suppression)
-        WHEN [Content-Length] > 104857600 AND [LastAccessTime] < DATEADD(month, -3, GETDATE())
-             THEN 'Revoir la politique de stockage'
-             
-        ELSE 'Aucune action requise'
+         WHEN AccessTier IN ('Hot','Cool') 
+              AND LastAccessTime < DATEADD(MONTH, -6, GETDATE()) THEN 'Migrer vers Archive'
+         WHEN [Content-Length] > 104857600 
+              AND LastAccessTime < DATEADD(MONTH, -3, GETDATE()) THEN 'Revoir la politique de stockage'
+         ELSE 'Aucune action requise'
     END AS OpportuniteOptimization
 FROM AzureBlobInventory
-WHERE 
-    [Deleted] = 0;  -- Considérer uniquement les blobs non supprimés
-
-
-
-Potential conversion error while reading VARCHAR column 'C1' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C2' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C3' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C4' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C5' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C6' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C7' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C8' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C9' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C10' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C11' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C12' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C13' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C14' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C15' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C16' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C17' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C18' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C19' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C20' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C21' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C22' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C23' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C24' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C25' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C26' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C27' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C28' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C29' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C30' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C31' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C32' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C33' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C34' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C35' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C36' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C37' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C38' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C39' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C40' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C41' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C42' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C43' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C44' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C45' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Potential conversion error while reading VARCHAR column 'C46' from UTF8 encoded text. Change database collation to a UTF8 collation or specify explicit column schema in WITH clause and assign UTF8 collation to VARCHAR columns. Invalid column name 'Deleted'
+WHERE Deleted = 0;

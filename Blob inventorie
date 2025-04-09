@@ -47,25 +47,28 @@
 			"RemainingRetentionDays"
 		]
 
-// Définir un seuil d'inactivité à 60 jours
-let inactivityThreshold = 60d;
-// Remplacez "YourStorageTable" par le nom de votre table d'inventaire
-YourStorageTable
-| where hdi_isfolder == false  // Exclure les dossiers
-| extend IdleDays = now() - LastAccessTime  // Calculer la durée d'inactivité en jours
-| where isnotnull(LastAccessTime) and LastAccessTime < ago(inactivityThreshold)  // Filtrer sur l'inactivité
-| where AccessTier in ("Hot", "Cool")  // Considérer uniquement les niveaux coûteux
-| where ['Content-Length'] > 1048576  // Filtrer sur les blobs > 1 Mo (modifiable)
-| project Name, ['Content-Length'], LastAccessTime, IdleDays, AccessTier, ['AccessTierChangeTime']
-| order by IdleDays desc
-
-
-let inactivityThreshold = 60d;
-YourStorageTable
-| where hdi_isfolder == false
-| extend IdleDays = now() - LastAccessTime
-| where isnotnull(LastAccessTime) and LastAccessTime < ago(inactivityThreshold)
-| where AccessTier in ("Hot", "Cool")
-| summarize TotalSizeBytes = sum(['Content-Length']), BlobCount = count() by AccessTier
-| order by TotalSizeBytes desc
+-- Requête de détection d'opportunités d'optimisation de stockage
+SELECT 
+    [Name],
+    [Content-Length],
+    [AccessTier],
+    [Creation-Time],
+    [Last-Modified],
+    [LastAccessTime],
+    CASE 
+        -- Si le blob est en tiers Hot ou Cool et n'a pas été accédé depuis plus de 6 mois,
+        -- il pourrait être éligible pour un déplacement vers le tiers Archive
+        WHEN [AccessTier] IN ('Hot','Cool') AND [LastAccessTime] < DATEADD(month, -6, GETDATE())
+             THEN 'Migrer vers Archive'
+             
+        -- Si le blob est très volumineux (par exemple > 100MB) et n'a pas été accédé depuis plus de 3 mois,
+        -- il est recommandé de revoir la politique de stockage (migration ou suppression)
+        WHEN [Content-Length] > 104857600 AND [LastAccessTime] < DATEADD(month, -3, GETDATE())
+             THEN 'Revoir la politique de stockage'
+             
+        ELSE 'Aucune action requise'
+    END AS OpportuniteOptimization
+FROM AzureBlobInventory
+WHERE 
+    [Deleted] = 0;  -- Considérer uniquement les blobs non supprimés
 

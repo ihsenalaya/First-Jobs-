@@ -47,6 +47,17 @@
 			"RemainingRetentionDays"
 		]
 
+
+
+SELECT
+    TOP 100 *
+FROM
+    OPENROWSET(
+        BULK 'https://finopshubooue77l2dj24c.dfs.core.windows.net/ingestion/2025/04/09/12-11-12/2nd rule/2nd rule_1000000_0.csv',
+        FORMAT = 'CSV',
+        PARSER_VERSION = '2.0'
+    ) AS [result]
+
 -- Requête de détection d'opportunités d'optimisation de stockage
 SELECT 
     [Name],

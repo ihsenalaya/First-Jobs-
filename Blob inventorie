@@ -151,3 +151,43 @@ WITH AzureBlobInventory AS (
          Version                          VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8
     ) AS src
 )
+WITH AzureBlobInventory AS (
+    -- Même définition que ci-dessus
+    SELECT *
+    FROM OPENROWSET(
+        BULK 'https://finopshubooue77l2dj24c.dfs.core.windows.net/ingestion/2025/04/09/12-11-12/2nd_rule_1000000_0.csv',
+        FORMAT = 'CSV',
+        FIRSTROW = 2,
+        PARSER_VERSION = '2.0'
+    )
+    WITH (
+         [Name]                           VARCHAR(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         [Last-Modified]                  DATETIME2,
+         Etag                             VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Metadata                         VARCHAR(255) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LeaseStatus                      VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LeaseState                       VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         LeaseDuration                    VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         PublicAccess                     VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         DefaultEncryptionScope           VARCHAR(100) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         DenyEncryptionScopeOverride      VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         ImmutableStorageWithVersioningEnabled VARCHAR(10) COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         HasImmutabilityPolicy            VARCHAR(10)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         HasLegalHold                     VARCHAR(10)  COLLATE Latin1_General_100_CI_AS_SC_UTF8,
+         Deleted                          BIT,
+         DeletedTime                      DATETIME2,
+         RemainingRetentionDays           INT,
+         Version                          VARCHAR(50)  COLLATE Latin1_General_100_CI_AS_SC_UTF8
+    ) AS src
+)
+SELECT
+    [Name],
+    [Last-Modified],
+    Etag,
+    COALESCE(Version, 'No Version') AS Version,
+    CASE 
+         WHEN ImmutableStorageWithVersioningEnabled = 'false' THEN 'Versioning Disabled'
+         WHEN ImmutableStorageWithVersioningEnabled = 'true' THEN 'Versioning Enabled'
+         ELSE 'Versioning Unknown'
+    END AS VersionStatus
+FROM AzureBlobInventory;

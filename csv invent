@@ -35,3 +35,11 @@ msexports/export/finopshub-focus-cost/20250401-20250430/202504071446/aa3e9bb2-ca
 msexports/export/finopshub-focus-cost/20250401-20250430/202504071726,2025-04-07T17:26:45Z,2025-04-07T17:26:45Z,0x8DD75F95F199D6C,,null,,unlocked,available,,,,,
 msexports/export/finopshub-focus-cost/20250401-20250430/202504071726/041e25f7-311f-4a2f-a30f-90ec76c3f6ca,2025-04-07T17:26:45Z,2025-04-07T17:26:45Z,0x8DD75F95F1BB300,,null,,unlocked,available,,,,,
 msexports/export/finopshub-focus-cost/20250401-20250430/202504071726/041e25f7-311f-4a2f-a30f-90ec76c3f6ca/manifest.json,2025-04-07T17:26:46Z,2025-04-07T17:26:46Z,0x8DD75F95F5E1598,,,,unlocked,available,,,,,
+
+
+
+Name,Last-Modified,Etag,Metadata,LeaseStatus,LeaseState,LeaseDuration,PublicAccess,DefaultEncryptionScope,DenyEncryptionScopeOverride,ImmutableStorageWithVersioningEnabled,HasImmutabilityPolicy,HasLegalHold,Deleted,DeletedTime,RemainingRetentionDays,Version
+$logs,2025-03-19T07:09:37Z,"""0x8DD66B50272122B""",,unlocked,available,,,$account-encryption-key,false,false,false,false,,,,
+config,2025-03-19T06:47:17Z,"""0x8DD66B1E413F78F""",,unlocked,available,,,$account-encryption-key,false,false,false,false,,,,
+ingestion,2025-03-19T06:47:17Z,"""0x8DD66B1E410C3BC""",,unlocked,available,,,$account-encryption-key,false,false,false,false,,,,
+msexports,2025-03-19T06:47:17Z,"""0x8DD66B1E429512D""",,unlocked,available,,,$account-encryption-key,false,false,false,false,,,,

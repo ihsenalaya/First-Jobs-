@@ -1,0 +1,32 @@
+from azure.storage.blob import BlobServiceClient
+from pyspark.sql import SparkSession
+
+# Configuration
+account_url = "https://<your-storage-account>.blob.core.windows.net/"
+container_name = "<your-container-name>"
+sas_token = "<your-sas-token>"  # ou utilise Azure Identity si nécessaire
+
+# Connexion à Azure Blob Storage
+blob_service_client = BlobServiceClient(account_url=account_url, credential=sas_token)
+container_client = blob_service_client.get_container_client(container_name)
+
+# Collecte des versions de tous les blobs
+all_versions = []
+
+for blob_item in container_client.list_blobs():  # Parcours des blobs
+    versions = container_client.list_blob_versions(name=blob_item.name)
+    for version in versions:
+        all_versions.append({
+            "blob_name": version.name,
+            "version_id": version.version_id,
+            "last_modified": version.last_modified,
+            "is_current_version": version.is_current_version,
+            "content_length": version.size
+        })
+
+# Création du DataFrame Spark
+spark = SparkSession.builder.getOrCreate()
+df = spark.createDataFrame(all_versions)
+
+# Affichage
+df.show(truncate=False)

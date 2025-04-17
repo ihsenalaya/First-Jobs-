@@ -1,32 +1,56 @@
-from azure.storage.blob import BlobServiceClient
-from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType
+import pyspark.sql.functions as F
 
-# Configuration
-account_url = "https://<your-storage-account>.blob.core.windows.net/"
-container_name = "<your-container-name>"
-sas_token = "<your-sas-token>"  # ou utilise Azure Identity si nécessaire
+# --------------------------------------------------------------------------- #
+# Paramètres à renseigner
+# --------------------------------------------------------------------------- #
+storage_account_name  = "<storage‑account‑name>"
+storage_account_key   = "<storage‑account‑key>"
+container             = "<container‑name>"
+blob_inventory_file   = "<blob‑inventory‑file‑name>"      # ex: "inventory/2025‑04‑15/manifest.csv"
+hierarchical_namespace_enabled = False                    # True si le compte est ADLS Gen2
+# --------------------------------------------------------------------------- #
 
-# Connexion à Azure Blob Storage
-blob_service_client = BlobServiceClient(account_url=account_url, credential=sas_token)
-container_client = blob_service_client.get_container_client(container_name)
+def read_blob_csv(file_path: str,
+                  has_hns: bool,
+                  schema: StructType | None = None):
+    """
+    Lit un fichier CSV dans Azure Blob Storage ou ADLS Gen2 et retourne un DataFrame.
+    - file_path : chemin dans le conteneur (sans protocole).
+    - has_hns   : True si hierarchical namespace (dfs.core.windows.net), sinon False.
+    - schema    : schéma Spark optionnel.
+    """
+    
+    # 1️⃣ Choix du protocole + configuration de la clé d’accès
+    if has_hns:
+        account_fqdn = f"{storage_account_name}.dfs.core.windows.net"
+        spark.conf.set(f"fs.azure.account.key.{account_fqdn}", storage_account_key)
+        uri = f"abfss://{container}@{account_fqdn}/{file_path}"
+    else:
+        account_fqdn = f"{storage_account_name}.blob.core.windows.net"
+        spark.conf.set(f"fs.azure.account.key.{account_fqdn}", storage_account_key)
+        uri = f"wasbs://{container}@{account_fqdn}/{file_path}"
 
-# Collecte des versions de tous les blobs
-all_versions = []
+    print(f"📥 Lecture du fichier via : {uri}")
 
-for blob_item in container_client.list_blobs():  # Parcours des blobs
-    versions = container_client.list_blob_versions(name=blob_item.name)
-    for version in versions:
-        all_versions.append({
-            "blob_name": version.name,
-            "version_id": version.version_id,
-            "last_modified": version.last_modified,
-            "is_current_version": version.is_current_version,
-            "content_length": version.size
-        })
+    # 2️⃣ Lecture effective
+    reader = spark.read.option("header", "true")
+    if schema is not None:
+        reader = reader.schema(schema)
+    else:
+        reader = reader.option("inferSchema", "true")
+    
+    return reader.csv(uri)
 
-# Création du DataFrame Spark
-spark = SparkSession.builder.getOrCreate()
-df = spark.createDataFrame(all_versions)
+# Exemple d’appel ----------------------------------------------------------------
+# Si vous avez déjà un schéma défini, décommentez et passez‑le à la fonction.
+# my_schema = StructType([
+#     StructField("Name", StringType(), True),
+#     StructField("Size", IntegerType(), True),
+#     StructField("LastModified", StringType(), True)
+# ])
+df = read_blob_csv(blob_inventory_file,
+                   has_hns=hierarchical_namespace_enabled,
+                   schema=None)
 
-# Affichage
-df.show(truncate=False)
+df.show(5)

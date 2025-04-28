@@ -1,0 +1,23 @@
+let dayNumber = 1d;
+let Start = datetime('2025-04-01');
+//  Pour le choix de subscription: PRD pour la production, PPD pour la preproduction, OTH pour Others et sandbox pour les sandboxs
+let subName = "PRD";
+let month = startofmonth(now());
+Costs_final_v1_0
+| where ResourceType == "Storage account"
+| where SubAccountName contains subName
+| extend week=bin_at(ChargePeriodStart , 7d , month)
+|summarize sumResource=sum(BilledCost) by ResourceName , week
+| order by ResourceName asc , week asc
+| extend coutPrecedent = iff(
+    ResourceName == prev(ResourceName) and (week - prev(week)) == 7d,
+    todouble(prev(sumResource)),
+    todouble(sumResource)
+)
+| extend pourcentage = iff(
+    isnotnull(coutPrecedent) and coutPrecedent != 0,
+    (toreal(sumResource) - coutPrecedent) * 100.0 /  coutPrecedent ,
+    double(null)
+ )
+| order by pourcentage desc 
+| project ResourceName , week

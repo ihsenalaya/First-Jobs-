@@ -21,3 +21,24 @@ Costs_final_v1_0
  )
 | order by pourcentage desc 
 | project ResourceName , week
+
+let Start      = datetime('2025-04-01');
+let subName    = "PRD";
+let monthStart = startofmonth(now());
+
+Costs_final_v1_0
+| where ResourceType      == "Storage account"
+| where SubAccountName    contains subName
+// Semaine « commerciale » de 7 jours calée sur le 1ᵉʳ du mois courant
+| extend week      = bin_at(ChargePeriodStart, 7d, monthStart)
+// Numéro de la semaine dans le mois : 1,2,3,4…
+| extend weekIndex = 1 + toint((week - monthStart) / 7d)
+// Limite à 4 semaines si tu veux strictement le mois courant
+| where weekIndex between (1 .. 4)
+// Total par compte et par semaine
+| summarize weekCost = sum(BilledCost) by ResourceName, weekIndex
+// Pivot : les valeurs de weekIndex deviennent des colonnes
+| evaluate pivot weekIndex sum(weekCost)
+// Renomme les colonnes 1-4 en Week1-4 (facultatif)
+| project-rename Week1 = '1', Week2 = '2', Week3 = '3', Week4 = '4'
+| order by ResourceName asc

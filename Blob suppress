@@ -14,3 +14,23 @@ for blob in blobs:
     print(f"Suppression de : {blob.name}")
     container_client.delete_blob(blob.name)
 print("Tous les blobs ont été supprimés.")
+
+
+# Paramètres
+$resourceGroup = "NomDuResourceGroup"
+$storageAccount = "NomDuCompteStockage"
+$containerName = "nom-du-conteneur"
+
+# Récupérer la clé de stockage
+$key = (Get-AzStorageAccountKey -ResourceGroupName $resourceGroup -Name $storageAccount)[0].Value
+
+# Créer le contexte de stockage
+$ctx = New-AzStorageContext -StorageAccountName $storageAccount -StorageAccountKey $key
+
+# Lister et supprimer les blobs
+$blobs = Get-AzStorageBlob -Container $containerName -Context $ctx
+foreach ($blob in $blobs) {
+    Write-Host "Suppression de : $($blob.Name)"
+    Remove-AzStorageBlob -Blob $blob.Name -Container $containerName -Context $ctx
+}
+Write-Host "Tous les blobs ont été supprimés."

@@ -34,3 +34,32 @@ foreach ($blob in $blobs) {
     Remove-AzStorageBlob -Blob $blob.Name -Container $containerName -Context $ctx
 }
 Write-Host "Tous les blobs ont été supprimés."
+Paramètres
+$resourceGroup = "NomDuResourceGroup"
+$storageAccount = "NomDuCompteStockage"
+$containerName = "nom-du-conteneur"
+
+# Obtenir la clé de compte
+$key = az storage account keys list `
+    --resource-group $resourceGroup `
+    --account-name $storageAccount `
+    --query "[0].value" -o tsv
+
+# Lister tous les blobs
+$blobs = az storage blob list `
+    --account-name $storageAccount `
+    --account-key $key `
+    --container-name $containerName `
+    --query "[].name" -o tsv
+
+# Supprimer chaque blob un par un
+foreach ($blob in $blobs) {
+    Write-Host "Suppression de : $blob"
+    az storage blob delete `
+        --account-name $storageAccount `
+        --account-key $key `
+        --container-name $containerName `
+        --name $blob
+}
+
+Write-Host "Tous les blobs ont été supprimés."

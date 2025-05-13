@@ -1,0 +1,16 @@
+from azure.storage.blob import BlobServiceClient
+
+# Paramètres
+connection_string = "DefaultEndpointsProtocol=https;AccountName=TON_COMPTE;AccountKey=TA_CLE;EndpointSuffix=core.windows.net"
+container_name = "ton-conteneur"
+
+# Connexion au service Blob
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+container_client = blob_service_client.get_container_client(container_name)
+
+# Liste et suppression des blobs
+blobs = container_client.list_blobs()
+for blob in blobs:
+    print(f"Suppression de : {blob.name}")
+    container_client.delete_blob(blob.name)
+print("Tous les blobs ont été supprimés.")

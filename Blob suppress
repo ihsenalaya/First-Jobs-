@@ -63,3 +63,49 @@ foreach ($blob in $blobs) {
 }
 
 Write-Host "Tous les blobs ont été supprimés."
+
+
+#!/bin/bash
+
+# Paramètres
+RESOURCE_GROUP="NomDuResourceGroup"
+STORAGE_ACCOUNT="NomDuCompteStockage"
+CONTAINER_NAME="nom-du-conteneur"
+
+# Obtenir la clé de compte
+KEY=$(az storage account keys list \
+    --resource-group $RESOURCE_GROUP \
+    --account-name $STORAGE_ACCOUNT \
+    --query "[0].value" \
+    --output tsv)
+
+if [ -z "$KEY" ]; then
+    echo "Échec de récupération de la clé"
+    exit 1
+fi
+
+# Lister tous les blobs
+BLOBS=$(az storage blob list \
+    --account-name $STORAGE_ACCOUNT \
+    --account-key $KEY \
+    --container-name $CONTAINER_NAME \
+    --query "[].name" \
+    --output tsv)
+
+if [ -z "$BLOBS" ]; then
+    echo "Aucun blob trouvé dans le conteneur"
+    exit 0
+fi
+
+# Supprimer les blobs
+while IFS= read -r BLOB; do
+    echo "Suppression de : $BLOB"
+    az storage blob delete \
+        --account-name $STORAGE_ACCOUNT \
+        --account-key $KEY \
+        --container-name $CONTAINER_NAME \
+        --name "$BLOB" \
+        --output none
+done <<< "$BLOBS"
+
+echo "Opération terminée. Tous les blobs ont été traités."

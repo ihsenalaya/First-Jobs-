@@ -79,3 +79,15 @@ Merci.
     },
     "type": "microsoft.capacity/reservationOrders/reservations"
   },
+
+
+jq '
+  # 1) Parcourt chaque élément et cumule les quantités dans un objet clé/valeur
+  reduce .[] as $item ({};                # état initial = {}
+    .[$item.sku.name] += $item.properties.quantity
+  )
+
+  # 2) transforme l’objet obtenu en tableau
+  | to_entries                            # → [{key, value}, …]
+  | map({sku_name: .key, quantity: .value})
+' reservations.json

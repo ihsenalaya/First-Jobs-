@@ -91,3 +91,11 @@ jq '
   | to_entries                            # → [{key, value}, …]
   | map({sku_name: .key, quantity: .value})
 ' reservations.json
+
+
+
+$filter = @'
+reduce .[] as $item ({}; .[$item.sku.name] += $item.properties.quantity)
+| to_entries
+| map({sku_name: .key, quantity: .value})
+'@

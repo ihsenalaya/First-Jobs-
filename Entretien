@@ -74,3 +74,8 @@ Merci.
         "aggregates": []
       }
     },
+    "sku": {
+      "name": "Standard_D4as_v5"
+    },
+    "type": "microsoft.capacity/reservationOrders/reservations"
+  },

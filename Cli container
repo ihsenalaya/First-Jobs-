@@ -1,0 +1,29 @@
+# wi-smoke.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wi-smoke
+spec:
+  serviceAccountName: <ton-sa>
+  restartPolicy: Never
+  containers:
+  - name: az
+    image: mcr.microsoft.com/azure-cli:2.60.0
+    command: ["bash","-c"]
+    args:
+    - |
+      set -e
+      echo "### Authentification..."
+      az login --federated-token $(cat $AZURE_FEDERATED_TOKEN_FILE) \
+               --service-principal \
+               --username $AZURE_CLIENT_ID \
+               --tenant   $AZURE_TENANT_ID \
+               --allow-no-subscriptions \
+      echo "### Listing blobs..."
+      az storage blob list \
+        --account-name <nomStorage> \
+        --container-name <nomContainer> \
+        --auth-mode login \
+        --query '[].name' -o tsv
+      echo "### Succès ✔"
+      sleep 3600          # laisse le Pod en vie pour inspection

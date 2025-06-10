@@ -1,0 +1,17 @@
+let diskName = "xxxxxxxxx";
+// Récupère l’ID complet du disque
+let targetDisk = 
+    resources
+    | where type == "microsoft.compute/disks" and name == diskName
+    | project id;
+// Interroge l’historique des changements pour cet ID
+resourcechanges
+| where properties.targetResourceId in (targetDisk)
+// Sélectionne les champs utiles
+| project 
+    ChangeTime   = properties.changeAttributes.timestamp,
+    ChangedBy    = properties.changeAttributes.caller,
+    ChangeType   = properties.changeType,
+    Changes      = properties.changes
+// Classe du plus récent au plus ancien
+| order by ChangeTime desc
